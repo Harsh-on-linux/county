@@ -69,3 +69,80 @@
     font-size: 41px;
   }
 }
+.account-recovery-screen .signin-panel {
+  max-width: 450px;
+}
+.account-recovery-screen .signin-brand {
+  margin-bottom: 40px;
+}
+.account-recovery-screen .signin-panel > p {
+  font-size: 16px;
+  line-height: 1.8;
+}
+.account-recovery-screen .wide + .wide {
+  margin-top: 14px;
+}
+.recovery-check {
+  display: flex;
+  gap: 14px;
+  align-items: center;
+}
+.recovery-check .startup-progress {
+  flex-shrink: 0;
+}
+.recovery-backup-card {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  background: #101114;
+  color: #fff5e9;
+  border: 1px solid #825d3c;
+  border-radius: 20px;
+  padding: 25px;
+  margin-bottom: 22px;
+}
+.recovery-backup-card > :not(.prism-surface) {
+  position: relative;
+  z-index: 1;
+}
+.recovery-backup-card > strong {
+  display: block;
+  font-size: 23px;
+  overflow-wrap: anywhere;
+}
+.recovery-backup-card > div:not(.prism-surface) {
+  display: flex;
+  gap: 30px;
+  margin: 22px 0;
+}
+.recovery-backup-card b {
+  display: block;
+  font-size: 34px;
+  font-weight: 500;
+  overflow-wrap: anywhere;
+}
+.recovery-backup-card > div:not(.prism-surface) > span {
+  flex: 1;
+  min-width: 0;
+}
+.recovery-backup-card small {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+}
+.account-recovery-screen .recovery-note {
+  font-size: 14px;
+}
+.recovery-import {
+  position: relative;
+  overflow: hidden;
+  cursor: pointer;
+}
+.recovery-import input {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  cursor: pointer;
+  width: 100%;
+}

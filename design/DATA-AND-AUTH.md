@@ -19,7 +19,11 @@ Accounts, entries, categories, captured payment details, discard decisions, and 
 - `invitations` stores single-use codes that expire after 24 hours.
 - `household_entries` stores the deliberately shared expense projection, separate from private backups.
 
-Cloud backup currently syncs automatically when signed in and online. Installing on a replacement phone does not silently overwrite local records: a private cloud backup is restored explicitly in Settings. Access control makes the backup private from other users, but this is not end-to-end encryption; the project's database administrators can access stored data.
+Cloud backup syncs automatically when signed in and online. On a new installation, sign-in checks for the account's private backup before enabling setup or uploads. An empty installation restores a valid saved copy automatically, including its revision. If this phone already has a setup, the user reviews the saved copy before restoring it; keeping local data pauses private cloud uploads and preserves the existing cloud copy. That pause survives reopening and is resolved by a confirmed cloud restore in Settings. A failed lookup is retried explicitly and cannot upload a replacement snapshot. Recovery-in-progress is persisted so restarting during a failed lookup cannot bypass this protection. If no copy exists, returning users see an explanation and can import a JSON backup or set up the phone. An imported backup is uploaded after validation. Access control makes the backup private from other users, but this is not end-to-end encryption; the project's database administrators can access stored data.
+
+Uninstalling clears Android's app-private records and session. Records that were never successfully backed up or exported cannot be recovered from Supabase Auth alone: the Auth account stores identity, not the ledger. `supabase/check-installation.sql` is a read-only SQL-editor audit of tables, RPC permissions, and per-account backup presence/counts. Re-running the initial `supabase/schema.sql` is not required for recovery and will conflict with an already installed schema.
+
+A private snapshot is saved before household synchronization, so a household RPC failure or shared-entry conflict cannot prevent personal accounts from reaching the backup service. Version checks still reject stale writes; a failed private backup is shown as needing attention rather than as a successful sync.
 
 ## What family members see
 

@@ -75,6 +75,8 @@ import {
   type SyncMark,
   type Household,
   type Member,
+  getPrivateBackup,
+  type PrivateBackup,
 } from "./cloud";
 import "./style.css";
 import { MoneyField } from "./components/MoneyField";
@@ -89,6 +91,7 @@ import { UnlabelledInbox } from "./components/UnlabelledInbox";
 import { FamilySettings } from "./components/FamilySettings";
 import { EmailSignIn } from "./components/EmailSignIn";
 import { SignInScreen } from "./components/SignInScreen";
+import { AccountRecovery } from "./components/AccountRecovery";
 import { BurstMark } from "./components/BurstMark";
 import { AccountColour, accountColour } from "./components/AccountColour";
 import { newAccountColour } from "./accountColours";
@@ -142,6 +145,12 @@ const monthLabel = (m: string) =>
     month: "long",
     year: "numeric",
   });
+const hasLocalRecords = (snapshot: Data) =>
+  !!(
+    snapshot.accounts.length ||
+    snapshot.entries.length ||
+    snapshot.suggestions.length
+  );
 function Logo({ small = false }: { small?: boolean }) {
   return (
     <span className={"brand " + (small ? "small" : "")}>
@@ -208,6 +217,15 @@ function CountyApp({
     [syncStatus, setSyncStatus] = useState("On this device"),
     [lastSync, setLastSync] = useState(""),
     [conflict, setConflict] = useState<SharedConflict | null>(null);
+  const [profileReady, setProfileReady] = useState<string | null>(null),
+    [recoveryBackup, setRecoveryBackup] = useState<PrivateBackup | null>(null),
+    [recoveryError, setRecoveryError] = useState(""),
+    [recoveryMissing, setRecoveryMissing] = useState(false),
+    [recoveryAttempt, setRecoveryAttempt] = useState(0),
+    [backupPaused, setBackupPaused] = useState(false);
+  const needsRecovery = useRef<string | null>(null),
+    pausedBackup = useRef(false);
+  const profile = user || (!online && offlineAccess ? deviceOwner : null);
   const revisions = useRef<Record<string, SyncMark>>({}),
     current = useRef<Data | null>(null),
     syncRunning = useRef(false),
@@ -248,7 +266,17 @@ function CountyApp({
           "Your connection is taking too long. Sign in again, or reopen County when connected.",
         );
     }, 4000);
-    const accept = async (id: string | null) => {
+    let accepting = Promise.resolve();
+    const acceptSession = async (id: string | null, signedOut: boolean) => {
+      if (!active) return;
+      if (signedOut) {
+        await Preferences.remove({ key: "county-offline-access" });
+        if (active) {
+          setOfflineAccess(false);
+          setModal(null);
+          setTab("Home");
+        }
+      }
       if (!id) {
         if (active) {
           setUser(null);
@@ -257,6 +285,7 @@ function CountyApp({
         return;
       }
       const owner = await Preferences.get({ key: "county-device-owner" });
+      if (!active) return;
       if (owner.value && owner.value !== id) {
         await cloud!.auth.signOut();
         toast(
@@ -270,6 +299,13 @@ function CountyApp({
         }
         return;
       }
+      if (!owner.value) {
+        needsRecovery.current = id;
+        await Preferences.set({
+          key: "county-recovery-pending-" + id,
+          value: "true",
+        });
+      }
       await Preferences.set({ key: "county-device-owner", value: id });
       await Preferences.set({ key: "county-offline-access", value: "allowed" });
       if (active) {
@@ -279,6 +315,13 @@ function CountyApp({
         setAuthReady(true);
         setAuthError("");
       }
+    };
+    const accept = (id: string | null, signedOut = false) => {
+      const next = accepting
+        .catch(() => {})
+        .then(() => acceptSession(id, signedOut));
+      accepting = next;
+      return next;
     };
     void (async () => {
       const cached = await Preferences.get({ key: "county-offline-access" });
@@ -308,15 +351,7 @@ function CountyApp({
       setTimeout(() => {
         clearTimeout(startupDeadline);
         void (async () => {
-          if (event === "SIGNED_OUT") {
-            if (active) {
-              setModal(null);
-              setTab("Home");
-            }
-            await Preferences.remove({ key: "county-offline-access" });
-            if (active) setOfflineAccess(false);
-          }
-          await accept(s?.user.id || null);
+          await accept(s?.user.id || null, event === "SIGNED_OUT");
         })().catch(() => {
           if (active) {
             setUser(null);
@@ -333,7 +368,6 @@ function CountyApp({
     };
   }, []);
   useEffect(() => {
-    const profile = user || (!online && offlineAccess ? deviceOwner : null);
     if (!profile) {
       setGroup(null);
       setMembers([]);
@@ -342,26 +376,82 @@ function CountyApp({
       backupRevision.current = 0;
       lastSynced.current = "";
       setSyncStatus("On this device");
+      setProfileReady(null);
+      setRecoveryBackup(null);
+      setRecoveryError("");
+      setRecoveryMissing(false);
       return;
     }
+    if (!data) return;
+    let active = true;
+    setProfileReady(null);
+    setRecoveryBackup(null);
+    setRecoveryError("");
+    setRecoveryMissing(false);
     void (async () => {
-      const marks = await Preferences.get({ key: "county-marks-" + profile });
+      const [marks, rev, cache, pause, pending, missing] = await Promise.all([
+        Preferences.get({ key: "county-marks-" + profile }),
+        Preferences.get({ key: "county-backup-revision-" + profile }),
+        Preferences.get({ key: "county-household" }),
+        Preferences.get({ key: "county-backup-paused-" + profile }),
+        Preferences.get({ key: "county-recovery-pending-" + profile }),
+        Preferences.get({ key: "county-backup-missing-" + profile }),
+      ]);
+      if (!active) return;
       revisions.current = JSON.parse(marks.value || "{}");
-      const rev = await Preferences.get({
-        key: "county-backup-revision-" + profile,
-      });
       backupRevision.current = Number(rev.value || 0);
-      const cache = await Preferences.get({ key: "county-household" });
+      pausedBackup.current = pause.value === "true";
+      setBackupPaused(pausedBackup.current);
       if (cache.value) {
-        const c = JSON.parse(cache.value);
-        if (c.user === profile) {
-          setGroup(c.household);
-          setMembers(c.members);
-          setShared(c.entries);
+        try {
+          const c = JSON.parse(cache.value);
+          if (c.user === profile) {
+            setGroup(c.household);
+            setMembers(c.members);
+            setShared(c.entries);
+          }
+        } catch {
+          /* A disposable family cache must not hide personal records. */
         }
       }
-    })();
-  }, [user, online, offlineAccess, deviceOwner]);
+      if (
+        user &&
+        (pending.value === "true" ||
+          needsRecovery.current === user ||
+          !hasLocalRecords(current.current!))
+      ) {
+        const remote = await getPrivateBackup();
+        if (!active) return;
+        if (remote) {
+          if (hasLocalRecords(current.current!)) {
+            setRecoveryBackup(remote);
+            return;
+          }
+          await restoreAccount(remote.payload, remote.revision, profile);
+          if (!active) return;
+        } else if (
+          (signInFirst || missing.value === "true") &&
+          !hasLocalRecords(current.current!)
+        ) {
+          await Preferences.set({
+            key: "county-backup-missing-" + profile,
+            value: "true",
+          });
+          setRecoveryMissing(true);
+          return;
+        }
+      }
+      if (!active) return;
+      await Preferences.remove({ key: "county-recovery-pending-" + profile });
+      needsRecovery.current = null;
+      setProfileReady(profile);
+    })().catch((cause) => {
+      if (active) setRecoveryError((cause as Error).message);
+    });
+    return () => {
+      active = false;
+    };
+  }, [profile, !!data, recoveryAttempt]);
   useEffect(() => {
     if (!data) return;
     try {
@@ -410,6 +500,36 @@ function CountyApp({
       });
     mutations.current = write;
     return write;
+  }
+  async function restoreAccount(
+    snapshot: Data,
+    revision: number,
+    owner: string,
+  ) {
+    await commit(snapshot);
+    backupRevision.current = revision;
+    lastSynced.current = revision > 0 ? JSON.stringify(snapshot) : "";
+    await Preferences.set({
+      key: "county-backup-revision-" + owner,
+      value: String(revision),
+    });
+    await Preferences.remove({ key: "county-backup-paused-" + owner });
+    await Preferences.remove({ key: "county-recovery-pending-" + owner });
+    await Preferences.remove({ key: "county-backup-missing-" + owner });
+    pausedBackup.current = false;
+    setBackupPaused(false);
+    setLocked(snapshot.lock && isAndroid);
+  }
+  async function recoveryAction(action: () => Promise<void>) {
+    setBusy(true);
+    setRecoveryError("");
+    try {
+      await action();
+    } catch (cause) {
+      setRecoveryError((cause as Error).message);
+    } finally {
+      setBusy(false);
+    }
   }
   async function change(fn: (d: Data) => Data) {
     try {
@@ -528,16 +648,40 @@ function CountyApp({
       };
     });
   }
+  async function pushPrivateBackup() {
+    if (!user || !current.current || pausedBackup.current) return;
+    const raw = JSON.stringify(current.current);
+    if (raw === lastSynced.current) return;
+    backupRevision.current = await rpc<number>("save_backup", {
+      snapshot: current.current,
+      expected_revision: backupRevision.current,
+    });
+    lastSynced.current = raw;
+    await Preferences.set({
+      key: "county-backup-revision-" + user,
+      value: String(backupRevision.current),
+    });
+  }
   async function sync() {
-    if (!cloud || !user || !current.current || !online || syncRunning.current)
+    if (
+      !cloud ||
+      !user ||
+      profileReady !== user ||
+      !current.current ||
+      !online ||
+      syncRunning.current
+    )
       return;
-    if (unresolved.current) {
-      setModal("conflict");
-      return;
-    }
     syncRunning.current = true;
     setSyncStatus("Syncing…");
     try {
+      // Personal records must be backed up even if a household RPC fails.
+      await pushPrivateBackup();
+      if (unresolved.current) {
+        setModal("conflict");
+        setSyncStatus("Shared edits waiting");
+        return;
+      }
       const before = await household();
       setGroup(before.household);
       setMembers(before.members);
@@ -598,18 +742,7 @@ function CountyApp({
         key: "county-household",
         value: JSON.stringify({ ...snapshot, user }),
       });
-      const raw = JSON.stringify(current.current);
-      if (raw !== lastSynced.current) {
-        backupRevision.current = await rpc<number>("save_backup", {
-          snapshot: current.current,
-          expected_revision: backupRevision.current,
-        });
-        lastSynced.current = raw;
-        await Preferences.set({
-          key: "county-backup-revision-" + user,
-          value: String(backupRevision.current),
-        });
-      }
+      await pushPrivateBackup();
       setLastSync(
         new Date().toLocaleTimeString("en-IN", {
           hour: "2-digit",
@@ -617,9 +750,11 @@ function CountyApp({
         }),
       );
       setSyncStatus(
-        current.current?.sharedEdits?.length
-          ? "Shared edits waiting"
-          : "Up to date",
+        pausedBackup.current
+          ? "Cloud backup paused"
+          : current.current?.sharedEdits?.length
+            ? "Shared edits waiting"
+            : "Up to date",
       );
     } catch (e) {
       setSyncStatus("Needs attention");
@@ -634,16 +769,16 @@ function CountyApp({
     }
   }
   useEffect(() => {
-    if (user && online && data?.onboarded) {
+    if (user && profileReady === user && online && data?.onboarded) {
       const t = setTimeout(() => void sync(), 1500);
       return () => clearTimeout(t);
     }
-  }, [user, online, data]);
+  }, [user, online, data, profileReady]);
   useEffect(() => {
     if (!user) return;
     const t = setInterval(() => void sync(), 60000);
     return () => clearInterval(t);
-  }, [user, online]);
+  }, [user, online, profileReady]);
   useEffect(() => {
     if (!isAndroid || opening || modal || tab === "Home") return;
     const listener = CapacitorApp.addListener("backButton", () => {
@@ -760,6 +895,67 @@ function CountyApp({
         </button>
         {notice && <p role="alert">{notice}</p>}
       </div>
+    );
+  if (user && profileReady !== user)
+    return (
+      <AccountRecovery
+        backup={recoveryBackup}
+        missing={recoveryMissing}
+        error={recoveryError}
+        busy={busy}
+        onRetry={() => setRecoveryAttempt((value) => value + 1)}
+        onRestore={() =>
+          void recoveryAction(async () => {
+            if (!recoveryBackup) return;
+            await restoreAccount(
+              recoveryBackup.payload,
+              recoveryBackup.revision,
+              user,
+            );
+            needsRecovery.current = null;
+            setProfileReady(user);
+            setRecoveryBackup(null);
+          })
+        }
+        onKeep={() =>
+          void recoveryAction(async () => {
+            await Preferences.set({
+              key: "county-backup-paused-" + user,
+              value: "true",
+            });
+            pausedBackup.current = true;
+            setBackupPaused(true);
+            await Preferences.remove({
+              key: "county-recovery-pending-" + user,
+            });
+            needsRecovery.current = null;
+            setProfileReady(user);
+            setRecoveryBackup(null);
+          })
+        }
+        onSetup={() =>
+          void recoveryAction(async () => {
+            await Preferences.remove({
+              key: "county-recovery-pending-" + user,
+            });
+            await Preferences.remove({ key: "county-backup-missing-" + user });
+            needsRecovery.current = null;
+            setRecoveryMissing(false);
+            setProfileReady(user);
+          })
+        }
+        onImport={async (snapshot) => {
+          setBusy(true);
+          try {
+            await restoreAccount(snapshot, 0, user);
+            needsRecovery.current = null;
+            setProfileReady(user);
+            setRecoveryMissing(false);
+          } finally {
+            setBusy(false);
+          }
+        }}
+      />
     );
   if (!data.onboarded || welcomePreview) return onboardingScreen;
   const d = data;
@@ -1658,6 +1854,17 @@ function CountyApp({
                 if (revision !== undefined) {
                   backupRevision.current = revision;
                   lastSynced.current = JSON.stringify(next);
+                  if (user)
+                    await Preferences.set({
+                      key: "county-backup-revision-" + user,
+                      value: String(revision),
+                    });
+                  if (user)
+                    await Preferences.remove({
+                      key: "county-backup-paused-" + user,
+                    });
+                  pausedBackup.current = false;
+                  setBackupPaused(false);
                 }
                 setModal(null);
                 toast("Backup restored.");
@@ -1674,6 +1881,7 @@ function CountyApp({
                     request(snapshot, revision);
                   }}
                   lastSync={lastSync}
+                  backupPaused={backupPaused}
                 />
               )}
             />
@@ -2381,6 +2589,7 @@ function CloudSettings({
   onSync,
   onRestore,
   lastSync,
+  backupPaused,
 }: {
   user: string | null;
   data: Data;
@@ -2390,6 +2599,7 @@ function CloudSettings({
   onSync: () => Promise<void>;
   onRestore: (d: Data, r: number) => Promise<void>;
   lastSync: string;
+  backupPaused: boolean;
 }) {
   return (
     <div className="settings-section">
@@ -2412,6 +2622,15 @@ function CloudSettings({
         </>
       ) : (
         <>
+          {backupPaused && (
+            <div className="info-box">
+              <ShieldCheck size={18} />
+              <span>
+                Cloud backup is paused to protect your saved copy. Restore the
+                cloud backup below to bring that space onto this phone.
+              </span>
+            </div>
+          )}
           <p className="caption">
             {online
               ? "Connected to your account"

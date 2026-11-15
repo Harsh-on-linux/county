@@ -1,5 +1,5 @@
 import { createClient } from "@supabase/supabase-js";
-import type { Data, Entry, SharedEntry } from "./domain";
+import { readBackup, type Data, type Entry, type SharedEntry } from "./domain";
 const url = import.meta.env.VITE_SUPABASE_URL;
 const key =
   import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY ||
@@ -19,6 +19,29 @@ export async function household(): Promise<{
   entries: SharedEntry[];
 }> {
   return rpc("household_snapshot");
+}
+export type PrivateBackup = { payload: Data; revision: number };
+export async function getPrivateBackup(): Promise<PrivateBackup | null> {
+  if (!cloud) throw new Error("Cloud backup is not connected in this build.");
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 12000);
+  let remote: PrivateBackup | null;
+  try {
+    const result = await cloud.rpc("get_backup").abortSignal(controller.signal);
+    if (result.error) throw new Error(result.error.message);
+    remote = result.data;
+  } finally {
+    clearTimeout(timeout);
+  }
+  if (remote === null) return null;
+  if (!remote || !Number.isSafeInteger(remote.revision) || remote.revision < 1)
+    throw new Error(
+      "The saved backup could not be verified. Your records have not been replaced.",
+    );
+  return {
+    payload: readBackup(JSON.stringify(remote.payload)),
+    revision: remote.revision,
+  };
 }
 import { Preferences } from "@capacitor/preferences";
 export type SyncMark = { revision: number; fingerprint: string };

@@ -1,14 +1,22 @@
 import { expect, test, type Page } from "@playwright/test";
-import { initial } from "../src/domain";
+import { initial, type Data } from "../src/domain";
+import { setMoney } from "./helpers";
 
 const owner = "10000000-0000-4000-8000-000000000001";
 const mom = "10000000-0000-4000-8000-000000000002";
 const invitation = "abcdef1234567890abcdef1234567890";
+type BackupBackend = {
+  backup: { payload: Data; revision: number } | null;
+  readError?: boolean;
+  householdError?: boolean;
+  stopAfterVerify?: boolean;
+};
 
 async function familyApp(
   page: Page,
   existingOwner?: string,
   firstRun?: "tour" | "signin",
+  backend?: BackupBackend,
 ) {
   if (existingOwner)
     await page.addInitScript(
@@ -96,10 +104,40 @@ async function familyApp(
     if (path.endsWith("/user")) return send(user);
     const name = path.split("/").at(-1)!;
     calls.push({ name, args });
+    if (name === "household_snapshot" && backend?.householdError)
+      return send(
+        { code: "PGRST202", message: "Household sync is unavailable" },
+        404,
+      );
     if (name === "household_snapshot")
       return send({ household, members, entries: [] });
-    if (name === "save_backup") return send(++revision);
-    if (name === "get_backup") return send(null);
+    if (name === "save_backup") {
+      if (backend) {
+        const previous = backend.backup?.revision || 0;
+        if (args.expected_revision !== previous)
+          return send(
+            { code: "P0001", message: "A newer cloud backup exists." },
+            400,
+          );
+        backend.backup = {
+          payload: structuredClone(args.snapshot),
+          revision: previous + 1,
+        };
+        return send(previous + 1);
+      }
+      return send(++revision);
+    }
+    if (name === "get_backup")
+      return backend?.readError
+        ? send(
+            {
+              code: "PGRST202",
+              message:
+                "Could not find the function public.get_backup in the schema cache",
+            },
+            404,
+          )
+        : send(backend?.backup || null);
     if (name === "create_household") {
       household = { id: "family", name: args.household_name, owner };
       members = [
@@ -184,7 +222,12 @@ async function familyApp(
     );
     return calls;
   }
-  if (firstRun === "signin") {
+  if (backend?.stopAfterVerify) return calls;
+  if (firstRun === "signin" && !backend?.backup) {
+    await expect(
+      page.getByRole("heading", { name: "No saved backup found." }),
+    ).toBeVisible();
+    await page.getByRole("button", { name: "Set up this phone" }).click();
     await expect(page.getByPlaceholder("Your first name")).toBeVisible();
     await expect(
       page.getByRole("button", { name: "Find your clarity" }),
@@ -222,10 +265,260 @@ test("a new user completes onboarding before email verification and records rema
   ).toBeVisible();
 });
 
+test("a fresh install restores saved banks after OTP and keeps the backup revision across reopening", async ({
+  page,
+  browser,
+}) => {
+  const backend: BackupBackend = { backup: null };
+  await familyApp(page, undefined, undefined, backend);
+  await page.getByRole("button", { name: "Close dialog" }).click();
+  await page.getByRole("button", { name: "Navigate County" }).click();
+  await page
+    .locator(".dock-destinations")
+    .getByRole("button", { name: "Home", exact: true })
+    .click();
+  await page.getByRole("button", { name: "Add account", exact: true }).click();
+  await page.getByLabel("Account name", { exact: true }).fill("Family savings");
+  await setMoney(page, "Current balance (₹)", "12345.67");
+  await page
+    .getByRole("button", { name: "Add account", exact: true })
+    .last()
+    .click();
+  await expect
+    .poll(() =>
+      backend.backup?.payload.accounts.some(
+        (account) => account.name === "Family savings",
+      ),
+    )
+    .toBe(true);
+  const saved = structuredClone(backend.backup!);
+  const replacement = await browser.newContext({
+    baseURL: "http://127.0.0.1:4174",
+  });
+  try {
+    const phone = await replacement.newPage();
+    const calls = await familyApp(phone, undefined, "signin", backend);
+    await expect(phone.getByPlaceholder("Your first name")).toHaveCount(0);
+    await phone.getByRole("button", { name: "Close dialog" }).click();
+    await phone.getByRole("button", { name: "Navigate County" }).click();
+    await phone
+      .locator(".dock-destinations")
+      .getByRole("button", { name: "Home", exact: true })
+      .click();
+    await expect(
+      phone.locator(".account-card").filter({ hasText: "Family savings" }),
+    ).toContainText("12,345.67");
+    expect(calls.filter((call) => call.name === "save_backup")).toHaveLength(0);
+    expect(
+      await phone.evaluate(
+        (id) =>
+          localStorage.getItem("CapacitorStorage.county-backup-revision-" + id),
+        owner,
+      ),
+    ).toBe(String(saved.revision));
+    await phone.reload();
+    await expect(
+      phone.locator(".account-card").filter({ hasText: "Family savings" }),
+    ).toContainText("12,345.67");
+    await phone.getByRole("button", { name: "Manage accounts" }).click();
+    await phone.getByRole("button", { name: "Edit Family savings" }).click();
+    await phone.getByRole("button", { name: "Teal", exact: true }).click();
+    await phone
+      .getByRole("button", { name: "Save account", exact: true })
+      .click();
+    await expect
+      .poll(
+        () =>
+          backend.backup?.payload.accounts.find(
+            (account) => account.name === "Family savings",
+          )?.color,
+      )
+      .toBe("teal");
+    const writes = calls.filter((call) => call.name === "save_backup");
+    expect(writes[0].args.expected_revision).toBe(saved.revision);
+    expect(writes.at(-1)!.args.expected_revision).toBe(
+      backend.backup!.revision - 1,
+    );
+    expect(backend.backup!.revision).toBe(saved.revision + writes.length);
+    expect(backend.backup!.payload.accounts).toHaveLength(
+      saved.payload.accounts.length,
+    );
+  } finally {
+    await replacement.close();
+  }
+});
+
+test("failed recovery can be retried after reopening without uploading a replacement setup", async ({
+  page,
+}) => {
+  const remote = {
+    ...initial(),
+    onboarded: true,
+    name: "Harsh",
+    accounts: [
+      {
+        id: "old-bank",
+        name: "Saved bank",
+        type: "bank" as const,
+        opening: 850000,
+      },
+    ],
+  };
+  const backend: BackupBackend = {
+    backup: { payload: remote, revision: 7 },
+    readError: true,
+    stopAfterVerify: true,
+  };
+  const calls = await familyApp(page, undefined, "tour", backend);
+  await expect(
+    page.getByRole("heading", { name: "Let’s reconnect." }),
+  ).toBeVisible();
+  await expect(page.locator(".balance-amount")).toHaveCount(0);
+  await page.reload();
+  await expect(
+    page.getByRole("heading", { name: "Let’s reconnect." }),
+  ).toBeVisible();
+  expect(calls.filter((call) => call.name === "save_backup")).toHaveLength(0);
+  expect(backend.backup).toEqual({ payload: remote, revision: 7 });
+  backend.readError = false;
+  await page.getByRole("button", { name: "Try again" }).click();
+  await expect(
+    page.getByRole("heading", { name: "Your saved space." }),
+  ).toBeVisible();
+  await page.screenshot({
+    path: "test-results/account-recovery-choice.png",
+    fullPage: true,
+  });
+  await page.getByRole("button", { name: "Restore saved space" }).click();
+  await expect(page.locator(".account-card")).toContainText("Saved bank");
+  await expect(page.locator(".balance-amount")).toContainText("8,500.00");
+  expect(calls.filter((call) => call.name === "save_backup")).toHaveLength(0);
+});
+
+test("keeping a new phone's setup protects the saved copy until cloud restore is confirmed", async ({
+  page,
+}) => {
+  const remote = {
+    ...initial(),
+    onboarded: true,
+    name: "Harsh",
+    accounts: [
+      {
+        id: "old-bank",
+        name: "Saved bank",
+        type: "bank" as const,
+        opening: 850000,
+      },
+    ],
+  };
+  const backend: BackupBackend = {
+    backup: { payload: remote, revision: 3 },
+    stopAfterVerify: true,
+  };
+  const calls = await familyApp(page, undefined, "tour", backend);
+  await page.getByRole("button", { name: "Keep this phone’s data" }).click();
+  await expect(
+    page.getByText("Cloud backup paused", { exact: true }),
+  ).toBeVisible();
+  expect(calls.filter((call) => call.name === "save_backup")).toHaveLength(0);
+  expect(backend.backup).toEqual({ payload: remote, revision: 3 });
+  await page.reload();
+  await page.getByRole("button", { name: "Settings", exact: true }).click();
+  await page.getByRole("tab", { name: "Backups", exact: true }).click();
+  await expect(
+    page.getByText(/Cloud backup is paused to protect your saved copy/),
+  ).toBeVisible();
+  await page.getByRole("button", { name: "Restore cloud backup" }).click();
+  await page
+    .getByRole("button", { name: "Replace records", exact: true })
+    .click();
+  await expect(page.locator(".account-card")).toContainText("Saved bank");
+  expect(
+    await page.evaluate(
+      (id) =>
+        localStorage.getItem("CapacitorStorage.county-backup-revision-" + id),
+      owner,
+    ),
+  ).toBe("3");
+  expect(
+    await page.evaluate(
+      (id) =>
+        localStorage.getItem("CapacitorStorage.county-backup-paused-" + id),
+      owner,
+    ),
+  ).toBeNull();
+});
+
 test("returning users can sign in directly and skip the introductory tour", async ({
   page,
 }) => {
   await familyApp(page, undefined, "signin");
+});
+
+test("private account backup is saved even when household sync cannot run", async ({
+  page,
+}) => {
+  const backend: BackupBackend = {
+    backup: null,
+    householdError: true,
+    stopAfterVerify: true,
+  };
+  await familyApp(page, undefined, undefined, backend);
+  await expect(
+    page.getByRole("heading", { name: "Hello, Harsh." }),
+  ).toBeVisible();
+  await expect
+    .poll(() => backend.backup?.payload.accounts[0]?.name)
+    .toBe("Cash");
+  expect(backend.backup!.payload.accounts[0].opening).toBe(500000);
+  await expect(
+    page.getByText("Household sync is unavailable", { exact: true }),
+  ).toBeVisible();
+});
+
+test("a missing cloud copy is explained and an imported backup is saved back to the account", async ({
+  page,
+}) => {
+  const backend: BackupBackend = { backup: null, stopAfterVerify: true };
+  await familyApp(page, undefined, "signin", backend);
+  await expect(
+    page.getByRole("heading", { name: "No saved backup found." }),
+  ).toBeVisible();
+  await expect(
+    page.getByText(/Reinstalling removes records stored only on the phone/),
+  ).toBeVisible();
+  await page.reload();
+  await expect(
+    page.getByRole("heading", { name: "No saved backup found." }),
+  ).toBeVisible();
+  await page.screenshot({
+    path: "test-results/account-recovery-missing.png",
+    fullPage: true,
+  });
+  const snapshot = {
+    ...initial(),
+    onboarded: true,
+    name: "Harsh",
+    accounts: [
+      {
+        id: "imported",
+        name: "Imported savings",
+        type: "bank" as const,
+        opening: 450000,
+      },
+    ],
+  };
+  await page.locator(".recovery-import input").setInputFiles({
+    name: "County-backup.json",
+    mimeType: "application/json",
+    buffer: Buffer.from(JSON.stringify(snapshot)),
+  });
+  await expect(page.locator(".account-card")).toContainText("Imported savings");
+  await expect(page.locator(".balance-amount")).toContainText("4,500.00");
+  await expect
+    .poll(() => backend.backup?.payload.accounts[0]?.name)
+    .toBe("Imported savings");
+  expect(backend.backup!.revision).toBe(1);
 });
 
 test("existing local records cannot be exposed through unfinished onboarding", async ({
