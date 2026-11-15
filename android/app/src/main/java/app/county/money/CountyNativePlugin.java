@@ -25,7 +25,9 @@ import androidx.activity.result.ActivityResult;
 public class CountyNativePlugin extends Plugin {
     @PluginMethod public void readSms(PluginCall call) {
         if (getPermissionState("sms") != PermissionState.GRANTED) {
-            requestPermissionForAlias("sms", call, "smsPermissionResult");
+            if (Boolean.FALSE.equals(call.getBoolean("requestPermission", true)))
+                call.reject("SMS access is off. Tap Check messages to enable it.", "SMS_PERMISSION_REQUIRED");
+            else requestPermissionForAlias("sms", call, "smsPermissionResult");
         } else collectSms(call);
     }
     @PermissionCallback private void smsPermissionResult(PluginCall call) {
@@ -37,7 +39,9 @@ public class CountyNativePlugin extends Plugin {
         getBridge().execute(() -> {
             JSArray messages = new JSArray();
             long since = System.currentTimeMillis() - 90L * 24 * 60 * 60 * 1000;
-            try (Cursor cursor = getContext().getContentResolver().query(Uri.parse("content://sms/inbox"), new String[]{"_id", "body", "date"}, "date >= ?", new String[]{Long.toString(since)}, "date DESC")) {
+            Long requestedSince = call.getLong("since");
+            if (requestedSince != null) since = Math.max(since, Math.min(requestedSince, System.currentTimeMillis()));
+            try (Cursor cursor = getContext().getContentResolver().query(Uri.parse("content://sms/inbox"), new String[]{"_id", "body", "date", "address"}, "date >= ?", new String[]{Long.toString(since)}, "date DESC")) {
                 if (cursor != null) while(cursor.moveToNext() && messages.length() < 10000) {
                     JSObject message = new JSObject();
                     String body = cursor.getString(1);
@@ -45,7 +49,7 @@ public class CountyNativePlugin extends Plugin {
                     byte[] digest = MessageDigest.getInstance("SHA-256").digest((timestamp + ":" + body).getBytes(StandardCharsets.UTF_8));
                     StringBuilder stableId = new StringBuilder();
                     for(byte b : digest) stableId.append(String.format("%02x", b & 0xff));
-                    message.put("id", stableId.toString()); message.put("body", body); message.put("timestamp", timestamp); messages.put(message);
+                    message.put("id", stableId.toString()); message.put("body", body); message.put("timestamp", timestamp); message.put("sender", cursor.getString(3)); messages.put(message);
                 }
                 JSObject result = new JSObject();result.put("messages", messages);call.resolve(result);
             } catch (Exception e) { call.reject("Could not read messages. Check County's SMS permission in Android settings.", e); }

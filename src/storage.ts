@@ -4,8 +4,8 @@ import { Filesystem, Directory, Encoding } from "@capacitor/filesystem";
 import { Share } from "@capacitor/share";
 import { initial, readBackup, type Data } from "./domain";
 export const Native = registerPlugin<{
-  readSms(): Promise<{
-    messages: { id: string; body: string; timestamp: number }[];
+  readSms(options?: { requestPermission?: boolean; since?: number }): Promise<{
+    messages: { id: string; body: string; timestamp: number; sender?: string }[];
   }>;
   authenticate(): Promise<void>;
 }>("CountyNative");

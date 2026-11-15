@@ -168,11 +168,16 @@ test("SMS review, custom navigation and dark layouts use the same recording flow
     fullPage: true,
   });
   await page.getByRole("button", { name: "Close navigation" }).click();
-  await page.getByRole("button", { name: /transaction to look over/ }).click();
-  await page.getByRole("button", { name: "Review", exact: true }).click();
+  await page
+    .getByRole("button", { name: /Unlabelled.*captured payment/ })
+    .click();
+  await page.getByRole("button", { name: "Label", exact: true }).click();
   await expect(
     page.getByRole("textbox", { name: "Amount in INR", exact: true }),
   ).toHaveValue("850");
+  await page
+    .getByRole("textbox", { name: "Amount in INR", exact: true })
+    .click();
   await page.screenshot({
     path: "test-results/county-keypad-dark.png",
     fullPage: true,
@@ -183,7 +188,8 @@ test("SMS review, custom navigation and dark layouts use the same recording flow
     .click();
   await choose(page, "Account", "Cash");
   await choose(page, "Category", "Groceries");
-  await page.getByRole("button", { name: "Save transaction" }).click();
+  await page.getByRole("button", { name: "Label & save" }).click();
+  await navigate(page, "Home");
   await expect(page.locator(".balance-amount")).toContainText("20,150.00");
   await navigate(page, "Insights");
   await expect(
@@ -201,10 +207,7 @@ test("SMS review, custom navigation and dark layouts use the same recording flow
   await page.getByRole("button", { name: "Settings", exact: true }).click();
   await page.getByRole("button", { name: /Replay coin intro/ }).click();
   await expect(page.locator(".intro-coin")).toBeVisible();
-  await expect(page.locator(".intro-coin")).toHaveCSS(
-    "animation-name",
-    "none",
-  );
+  await expect(page.locator(".intro-coin")).toHaveCSS("animation-name", "none");
   await expect(page.locator(".intro-front .brand-mark")).toBeAttached();
   await page.getByRole("button", { name: "Skip intro" }).click();
   await expect(

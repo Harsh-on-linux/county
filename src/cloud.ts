@@ -1,7 +1,9 @@
 import { createClient } from "@supabase/supabase-js";
 import type { Data, Entry, SharedEntry } from "./domain";
 const url = import.meta.env.VITE_SUPABASE_URL;
-const key = import.meta.env.VITE_SUPABASE_ANON_KEY;
+const key =
+  import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY ||
+  import.meta.env.VITE_SUPABASE_ANON_KEY;
 export const cloud = url && key ? createClient(url, key) : null;
 export type Household = { id: string; name: string; owner: string };
 export type Member = { user_id: string; name: string };

@@ -5,6 +5,11 @@ import { isAndroid } from "../storage";
 const sections = [
   { id: "Home", label: "Overview", hint: "Your everyday money" },
   { id: "Activity", label: "The ledger", hint: "Every in. Every out." },
+  {
+    id: "Unlabelled",
+    label: "Unlabelled",
+    hint: "Captured payments to review",
+  },
   { id: "Household", label: "Our home", hint: "A space for your people" },
   { id: "Insights", label: "Patterns", hint: "See the bigger picture" },
 ];
@@ -12,10 +17,14 @@ export function CountyDock({
   tab,
   onSelect,
   onAdd,
+  unlabelledCount = 0,
+  blocked = false,
 }: {
   tab: string;
   onSelect: (v: string) => void;
   onAdd: () => void;
+  unlabelledCount?: number;
+  blocked?: boolean;
 }) {
   const [open, setOpen] = useState(false);
   const root = useRef<HTMLDivElement>(null);
@@ -63,7 +72,12 @@ export function CountyDock({
     };
   }, [open]);
   return (
-    <div className={"county-dock " + (open ? "expanded" : "")} ref={root}>
+    <div
+      className={"county-dock " + (open ? "expanded" : "")}
+      ref={root}
+      inert={blocked}
+      aria-hidden={blocked || undefined}
+    >
       {open && (
         <>
           <button
@@ -95,7 +109,14 @@ export function CountyDock({
               >
                 <span className="dock-index">0{i + 1}</span>
                 <span>
-                  <strong>{s.label}</strong>
+                  <strong>
+                    {s.label}
+                    {s.id === "Unlabelled" && unlabelledCount > 0 && (
+                      <span className="dock-inbox-count">
+                        {unlabelledCount}
+                      </span>
+                    )}
+                  </strong>
                   <small>{s.hint}</small>
                 </span>
                 {s.id === tab ? (

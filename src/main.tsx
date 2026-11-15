@@ -85,11 +85,21 @@ import { BrandMark } from "./components/BrandMark";
 import { Onboarding } from "./components/Onboarding";
 import { OpeningScreen } from "./components/OpeningScreen";
 import { BalanceSurface } from "./components/BalanceSurface";
+import { UnlabelledInbox } from "./components/UnlabelledInbox";
+import { FamilySettings } from "./components/FamilySettings";
+import { EmailSignIn } from "./components/EmailSignIn";
+import {
+  ingestMessages,
+  matchSuggestion,
+  setSuggestionStatus,
+  suggestionStatus,
+} from "./capture";
 import "./design.css";
 import "./typography.css";
 import "./keypad.css";
 import "./opening.css";
 import "./balance-card.css";
+import "./review.css";
 
 if (import.meta.env.PROD && "serviceWorker" in navigator && !isAndroid) {
   void navigator.serviceWorker.register("/sw.js").catch(console.error);
@@ -138,6 +148,11 @@ function App() {
     [online, setOnline] = useState(navigator.onLine),
     [locked, setLocked] = useState(false),
     [busy, setBusy] = useState(false);
+  const [scanning, setScanning] = useState(false),
+    [scanError, setScanError] = useState(""),
+    [resumeEntry, setResumeEntry] = useState(false);
+  const scanRunning = useRef(false),
+    mutations = useRef<Promise<void>>(Promise.resolve());
   const [month, setMonth] = useState(today().slice(0, 7)),
     [dayFilter, setDayFilter] = useState(""),
     [query, setQuery] = useState(""),
@@ -276,19 +291,83 @@ function App() {
       void listener.then((l) => l.remove());
     };
   }, []);
-  async function commit(next: Data) {
-    await save(next);
-    current.current = next;
-    setData(next);
-    if (user) setSyncStatus("Changes pending");
+  function commit(update: Data | ((live: Data) => Data)) {
+    const write = mutations.current
+      .catch(() => {})
+      .then(async () => {
+        const next =
+          typeof update === "function" ? update(current.current!) : update;
+        await save(next);
+        current.current = next;
+        setData(next);
+        if (user) setSyncStatus("Changes pending");
+      });
+    mutations.current = write;
+    return write;
   }
   async function change(fn: (d: Data) => Data) {
     try {
-      await commit(fn(current.current!));
+      await commit(fn);
     } catch (e) {
       toast("Could not save. " + (e as Error).message);
     }
   }
+  async function scanMessages(requestPermission = true) {
+    if (!isAndroid || scanRunning.current || !current.current) return;
+    scanRunning.current = true;
+    setScanning(true);
+    setScanError("");
+    try {
+      const previousScan =
+        current.current.lastSmsScan && Date.parse(current.current.lastSmsScan);
+      const { messages } = await Native.readSms({
+        requestPermission,
+        ...(!requestPermission && previousScan
+          ? { since: previousScan - 60 * 60 * 1000 }
+          : {}),
+      });
+      let added = 0;
+      await commit((live) => {
+        if (!requestPermission && !live.smsCapture) return live;
+        const result = ingestMessages(live, messages);
+        added = result.added;
+        return {
+          ...result.data,
+          smsCapture: true,
+          lastSmsScan: new Date().toISOString(),
+        };
+      });
+      if (requestPermission)
+        toast(
+          added
+            ? `${added} payment${added === 1 ? "" : "s"} ready to label.`
+            : "No new payments found.",
+        );
+    } catch (e) {
+      setScanError((e as Error).message);
+    } finally {
+      scanRunning.current = false;
+      setScanning(false);
+    }
+  }
+  useEffect(() => {
+    if (!isAndroid || !data?.onboarded || !data.smsCapture || locked || opening)
+      return;
+    void scanMessages(false);
+    const timer = setInterval(() => {
+      if (document.visibilityState === "visible") void scanMessages(false);
+    }, 30000);
+    const listener = CapacitorApp.addListener(
+      "appStateChange",
+      ({ isActive }) => {
+        if (isActive && !current.current?.lock) void scanMessages(false);
+      },
+    );
+    return () => {
+      clearInterval(timer);
+      void listener.then((l) => l.remove());
+    };
+  }, [data?.onboarded, data?.smsCapture, locked, opening]);
   async function attempt(fn: () => Promise<void>) {
     setBusy(true);
     try {
@@ -300,18 +379,19 @@ function App() {
     }
   }
   async function queueShared(item: SharedEntry, payload: Entry) {
-    const live = current.current!;
-    const previous = live.sharedEdits?.find((e) => e.id === item.id);
-    await commit({
-      ...live,
-      sharedEdits: [
-        ...(live.sharedEdits || []).filter((e) => e.id !== item.id),
-        {
-          ...item,
-          revision: previous?.revision || item.revision,
-          payload: { ...payload, account: "" },
-        },
-      ],
+    await commit((live) => {
+      const previous = live.sharedEdits?.find((e) => e.id === item.id);
+      return {
+        ...live,
+        sharedEdits: [
+          ...(live.sharedEdits || []).filter((e) => e.id !== item.id),
+          {
+            ...item,
+            revision: previous?.revision || item.revision,
+            payload: { ...payload, account: "" },
+          },
+        ],
+      };
     });
   }
   async function sync() {
@@ -339,8 +419,7 @@ function App() {
         if (remote.revision !== pending.revision)
           throw new SharedConflict(pending.payload, remote, true);
         const revision = await editShared(pending, pending.payload);
-        const live: Data = current.current!;
-        const next: Data = {
+        await commit((live) => ({
           ...live,
           sharedEdits: live.sharedEdits?.flatMap((e) =>
             e.id !== pending.id
@@ -349,10 +428,7 @@ function App() {
                 ? []
                 : [{ ...e, revision }],
           ),
-        };
-        await save(next);
-        current.current = next;
-        setData(next);
+        }));
       }
       if (before.household) {
         const original: Data = current.current!;
@@ -363,8 +439,7 @@ function App() {
           user,
         );
         if (JSON.stringify(merged) !== JSON.stringify(original)) {
-          const live: Data = current.current!;
-          const resolved: Data = {
+          await commit((live) => ({
             ...live,
             entries: live.entries.map((entry) => {
               const old = original.entries.find((e) => e.id === entry.id);
@@ -378,13 +453,12 @@ function App() {
                 );
               return pulled;
             }),
-          };
-          await save(resolved);
-          current.current = resolved;
-          setData(resolved);
+          }));
         }
       }
       const snapshot = await household();
+      setGroup(snapshot.household);
+      setMembers(snapshot.members);
       setShared(snapshot.entries);
       await Preferences.set({
         key: "county-household",
@@ -436,6 +510,17 @@ function App() {
     const t = setInterval(() => void sync(), 60000);
     return () => clearInterval(t);
   }, [user, online]);
+  useEffect(() => {
+    if (!isAndroid || opening || modal || tab === "Home") return;
+    const listener = CapacitorApp.addListener("backButton", () => {
+      if (document.querySelector(".county-dock.expanded")) return;
+      setTab("Home");
+      setDayFilter("");
+    });
+    return () => {
+      void listener.then((l) => l.remove());
+    };
+  }, [tab, modal, opening]);
   if (fatal)
     return (
       <div className="recovery">
@@ -548,7 +633,7 @@ function App() {
         b.date.localeCompare(a.date) || b.updated.localeCompare(a.updated),
     );
   const pending = d.suggestions.filter(
-    (s) => !s.dismissed && !d.entries.some((e) => e.smsId === s.id),
+    (s) => suggestionStatus(s, d.entries) === "unlabelled",
   );
   function openLedger(day = "", accountId = "All") {
     setDayFilter(day);
@@ -562,7 +647,14 @@ function App() {
   function add() {
     setEdit(null);
     setSuggestion(null);
-    setModal("entry");
+    setResumeEntry(!d.accounts.length);
+    setModal(d.accounts.length ? "entry" : "account");
+  }
+  function reviewSuggestion(s: Suggestion) {
+    setSuggestion(s);
+    setEdit(null);
+    setResumeEntry(!d.accounts.length);
+    setModal(d.accounts.length ? "entry" : "account");
   }
   function shiftMonth(n: number) {
     const dt = new Date(month + "-15T12:00:00");
@@ -698,7 +790,11 @@ function App() {
   return (
     <>
       {opening && <OpeningScreen onDone={() => setOpening(false)} />}
-      <div className="app-shell">
+      <div
+        className="app-shell"
+        inert={!!modal || opening}
+        aria-hidden={modal || opening ? true : undefined}
+      >
         <aside className="sidebar">
           <Logo />
           <span className="workspace-label">YOUR EVERYDAY MONEY</span>
@@ -706,6 +802,7 @@ function App() {
             {[
               { name: "Home", icon: Home },
               { name: "Activity", icon: ListFilter },
+              { name: "Unlabelled", icon: Inbox },
               { name: "Household", icon: Users },
               { name: "Insights", icon: ChartNoAxesCombined },
             ].map(({ name, icon: Icon }) => (
@@ -717,7 +814,7 @@ function App() {
               >
                 <Icon size={20} />
                 {name}
-                {name === "Activity" && pending.length > 0 && (
+                {name === "Unlabelled" && pending.length > 0 && (
                   <span className="nav-count">{pending.length}</span>
                 )}
               </button>
@@ -767,27 +864,6 @@ function App() {
             </button>
           </header>
           <div className={"page page-" + tab.toLowerCase()}>
-            {tab === "Home" && (
-              <div className="daily-edition">
-                <span className="edition-day">
-                  {new Date().getDate().toString().padStart(2, "0")}
-                </span>
-                <div>
-                  <strong>
-                    {new Date().toLocaleDateString("en-IN", {
-                      weekday: "long",
-                    })}
-                  </strong>
-                  <span>
-                    {new Date().toLocaleDateString("en-IN", {
-                      month: "long",
-                      year: "numeric",
-                    })}
-                  </span>
-                  <small>YOUR DAILY EDITION</small>
-                </div>
-              </div>
-            )}
             <section className="page-heading">
               <div>
                 <div className="eyebrow">
@@ -795,9 +871,11 @@ function App() {
                     ? "A LITTLE CLARITY, EVERY DAY"
                     : tab === "Household"
                       ? "BETTER, TOGETHER"
-                      : tab === "Insights"
-                        ? "THE BIGGER PICTURE"
-                        : "EVERY LITTLE THING"}
+                      : tab === "Unlabelled"
+                        ? "A MOMENT TO REVIEW"
+                        : tab === "Insights"
+                          ? "THE BIGGER PICTURE"
+                          : "EVERY LITTLE THING"}
                 </div>
                 <h1>
                   {tab === "Home"
@@ -806,17 +884,21 @@ function App() {
                       ? "The ledger"
                       : tab === "Household"
                         ? "Our home"
-                        : "Find your patterns"}
+                        : tab === "Unlabelled"
+                          ? "Unlabelled"
+                          : "Find your patterns"}
                   <span className="accent">.</span>
                 </h1>
                 <p>
                   {tab === "Home"
-                    ? "A good place to check in with your money."
+                    ? "Your money, at a glance."
                     : tab === "Activity"
                       ? "The ins, the outs, and everything in between."
                       : tab === "Household"
                         ? "Shared spending. Personal space. A little more harmony."
-                        : "Small patterns. Better understanding."}
+                        : tab === "Unlabelled"
+                          ? "Check the details. Give each payment a home."
+                          : "Small patterns. Better understanding."}
                 </p>
               </div>
               <button className="primary desktop-add" onClick={add}>
@@ -884,6 +966,25 @@ function App() {
                     </div>
                   </section>
                 </div>
+                <button
+                  className="inbox-banner"
+                  onClick={() => setTab("Unlabelled")}
+                >
+                  <span className="round-icon lilac">
+                    <Inbox size={20} />
+                  </span>
+                  <div>
+                    <strong>
+                      Unlabelled <span className="count">{pending.length}</span>
+                    </strong>
+                    <p>
+                      {pending.length
+                        ? `${pending.length} captured payment${pending.length === 1 ? "" : "s"} ready to label`
+                        : "Review payments captured from bank messages"}
+                    </p>
+                  </div>
+                  <ChevronRight size={18} />
+                </button>
                 <section className="accounts-section">
                   <div className="section-top">
                     <h2>
@@ -959,24 +1060,6 @@ function App() {
                     </p>
                   )}
                 </section>
-                {pending.length > 0 && (
-                  <button
-                    className="inbox-banner"
-                    onClick={() => setModal("sms")}
-                  >
-                    <span className="round-icon lilac">
-                      <Inbox size={20} />
-                    </span>
-                    <div>
-                      <strong>
-                        {pending.length} transaction
-                        {pending.length === 1 ? "" : "s"} to look over
-                      </strong>
-                      <p>From your bank messages. You have the final say.</p>
-                    </div>
-                    <ChevronRight size={18} />
-                  </button>
-                )}
                 <MonthPulse
                   entries={monthly}
                   month={month}
@@ -1016,10 +1099,62 @@ function App() {
                     {categoryChart(monthly)}
                   </section>
                 </div>
-                <div className="quiet-footer">
-                  A little clarity goes a long way.
-                </div>
               </>
+            )}
+            {tab === "Unlabelled" && (
+              <UnlabelledInbox
+                data={d}
+                android={isAndroid}
+                scanning={scanning}
+                scanError={scanError}
+                onScan={() => void scanMessages()}
+                onToggle={() =>
+                  void change((live) => ({
+                    ...live,
+                    smsCapture: !live.smsCapture,
+                  }))
+                }
+                onPaste={async (body, date) => {
+                  const timestamp = Date.parse(date + "T12:00:00");
+                  if (!parseSms("preview", body, timestamp))
+                    throw new Error(
+                      "No completed payment found. Use a bank message with a debit or credit amount.",
+                    );
+                  const digest = await crypto.subtle.digest(
+                    "SHA-256",
+                    new TextEncoder().encode(date + ":" + body.trim()),
+                  );
+                  const id =
+                    "paste-" +
+                    [...new Uint8Array(digest)]
+                      .map((b) => b.toString(16).padStart(2, "0"))
+                      .join("");
+                  await commit((live) => {
+                    const result = ingestMessages(live, [
+                      { id, body, timestamp },
+                    ]);
+                    if (!result.added)
+                      throw new Error(
+                        "This payment has already been captured. Check Unlabelled or Discarded.",
+                      );
+                    return result.data;
+                  });
+                  toast("Payment ready to label.");
+                }}
+                onReview={reviewSuggestion}
+                onDiscard={(id) =>
+                  commit((live) => setSuggestionStatus(live, id, "discarded"))
+                }
+                onRestore={(id) =>
+                  commit((live) => setSuggestionStatus(live, id, "unlabelled"))
+                }
+                onMatch={(id) => commit((live) => matchSuggestion(live, id))}
+                onAccount={() => {
+                  setResumeEntry(false);
+                  setSuggestion(null);
+                  setModal("account");
+                }}
+              />
             )}
             {tab === "Activity" && (
               <>
@@ -1046,8 +1181,11 @@ function App() {
                     />
                   </label>
                   {monthPicker}
-                  <button className="secondary" onClick={() => setModal("sms")}>
-                    <Inbox size={17} /> SMS inbox{" "}
+                  <button
+                    className="secondary"
+                    onClick={() => setTab("Unlabelled")}
+                  >
+                    <Inbox size={17} /> Unlabelled{" "}
                     {pending.length > 0 && (
                       <span className="badge">{pending.length}</span>
                     )}
@@ -1291,6 +1429,8 @@ function App() {
       </div>
       <CountyDock
         tab={tab}
+        unlabelledCount={pending.length}
+        blocked={!!modal || opening}
         onSelect={(v) => {
           setTab(v);
           setDayFilter("");
@@ -1303,28 +1443,33 @@ function App() {
             modal === "entry"
               ? edit
                 ? "Transaction details"
-                : "Make a record"
+                : suggestion
+                  ? "Label transaction"
+                  : "Make a record"
               : modal === "account"
                 ? "Add an account"
                 : modal === "accounts"
                   ? "Your accounts"
                   : modal === "settings"
                     ? "Make County yours"
-                    : modal === "sms"
-                      ? "Your SMS inbox"
-                      : modal === "family"
-                        ? "Your household"
-                        : modal.startsWith("shared-edit")
-                          ? "Shared expense"
-                          : "County"
+                    : modal === "family"
+                      ? "Your household"
+                      : modal.startsWith("shared-edit")
+                        ? "Shared expense"
+                        : "County"
           }
-          close={() => setModal(null)}
+          close={() => {
+            setModal(null);
+            setSuggestion(null);
+            setResumeEntry(false);
+          }}
         >
           {(modal === "entry" || modal.startsWith("shared-edit")) && (
             <EntryForm
               data={d}
               entry={edit}
               suggestion={suggestion}
+              householdConnected={!!group}
               sharedOnly={modal.startsWith("shared-edit")}
               busy={busy}
               onSave={(entry) =>
@@ -1338,15 +1483,28 @@ function App() {
                     });
                   } else {
                     validateEntry(entry, d.accounts);
-                    await commit({
-                      ...d,
-                      entries: [
-                        ...d.entries.filter((e) => e.id !== entry.id),
-                        entry,
-                      ],
-                      suggestions: d.suggestions.map((s) =>
-                        s.id === suggestion?.id ? { ...s, dismissed: true } : s,
-                      ),
+                    await commit((live) => {
+                      if (
+                        suggestion &&
+                        live.entries.some((e) => e.smsId === suggestion.id)
+                      )
+                        throw new Error("This payment is already recorded.");
+                      return {
+                        ...live,
+                        entries: [
+                          ...live.entries.filter((e) => e.id !== entry.id),
+                          entry,
+                        ],
+                        suggestions: live.suggestions.map((s) =>
+                          s.id === suggestion?.id
+                            ? {
+                                ...s,
+                                status: "saved" as const,
+                                dismissed: true,
+                              }
+                            : s,
+                        ),
+                      };
                     });
                   }
                   setModal(null);
@@ -1364,9 +1522,9 @@ function App() {
                             deleted: !edit.deleted,
                           });
                         } else
-                          await commit({
-                            ...d,
-                            entries: d.entries.map((e) =>
+                          await commit((live) => ({
+                            ...live,
+                            entries: live.entries.map((e) =>
                               e.id === edit.id
                                 ? {
                                     ...e,
@@ -1375,7 +1533,7 @@ function App() {
                                   }
                                 : e,
                             ),
-                          });
+                          }));
                         setModal(null);
                         toast(
                           edit.deleted
@@ -1392,8 +1550,12 @@ function App() {
               busy={busy}
               onSave={(a) =>
                 void attempt(async () => {
-                  await commit({ ...d, accounts: [...d.accounts, a] });
-                  setModal(null);
+                  await commit((live) => ({
+                    ...live,
+                    accounts: [...live.accounts, a],
+                  }));
+                  setModal(resumeEntry ? "entry" : null);
+                  setResumeEntry(false);
                   toast("Account added.");
                 })
               }
@@ -1536,7 +1698,7 @@ function App() {
                   onClick={() =>
                     void attempt(async () => {
                       await Native.authenticate();
-                      await commit({ ...d, lock: !d.lock });
+                      await commit((live) => ({ ...live, lock: !live.lock }));
                     })
                   }
                 >
@@ -1564,7 +1726,10 @@ function App() {
                         )
                       )
                         void attempt(async () => {
-                          await commit({ ...d, sharedEdits: [] });
+                          await commit((live) => ({
+                            ...live,
+                            sharedEdits: [],
+                          }));
                           unresolved.current = null;
                           setConflict(null);
                           toast("Queued household edits discarded.");
@@ -1692,123 +1857,6 @@ function App() {
               </p>
             </>
           )}
-          {modal === "sms" && (
-            <>
-              <p className="dialog-intro">
-                Bank messages become suggestions. Nothing is recorded until you
-                approve it.
-              </p>
-              <button
-                className="secondary wide"
-                disabled={!isAndroid || busy}
-                onClick={() =>
-                  void attempt(async () => {
-                    const { messages } = await Native.readSms();
-                    const unseen = messages.filter(
-                      (m) => !d.seenSms.includes(m.id),
-                    );
-                    const found = unseen
-                      .map((m) => parseSms(m.id, m.body, m.timestamp))
-                      .filter((s): s is Suggestion => !!s);
-                    const refs = new Set(
-                      d.suggestions.map((s) => s.reference).filter(Boolean),
-                    );
-                    const unique = found.filter((s) => {
-                      if (!s.reference) return true;
-                      if (refs.has(s.reference)) return false;
-                      refs.add(s.reference);
-                      return true;
-                    });
-                    await commit({
-                      ...d,
-                      suggestions: [...d.suggestions, ...unique],
-                      seenSms: [
-                        ...new Set([...d.seenSms, ...unseen.map((s) => s.id)]),
-                      ],
-                    });
-                    toast(`${unique.length} new suggestions found.`);
-                  })
-                }
-              >
-                <RefreshCw size={17} />
-                {isAndroid
-                  ? "Review recent bank messages"
-                  : "SMS access is available on Android"}
-              </button>
-              <p className="caption">
-                Only financial details are kept. Raw messages stay on your
-                phone. SMS is checked when you open this inbox and tap review.
-              </p>
-              {pending.map((s) => (
-                <div className="sms-card" key={s.id}>
-                  <div>
-                    <strong>{s.payee}</strong>
-                    <span>{money(s.amount, true)}</span>
-                  </div>
-                  <small>
-                    {s.date} · {s.type}
-                  </small>
-                  {duplicate(s, d.entries) && (
-                    <p className="warning">
-                      A matching entry exists. Check before adding.
-                    </p>
-                  )}
-                  <div className="sms-actions">
-                    <button
-                      className="text-button"
-                      onClick={() =>
-                        void change((d) => ({
-                          ...d,
-                          suggestions: d.suggestions.map((x) =>
-                            x.id === s.id ? { ...x, dismissed: true } : x,
-                          ),
-                        }))
-                      }
-                    >
-                      Dismiss
-                    </button>
-                    {duplicate(s, d.entries) && (
-                      <button
-                        className="text-button"
-                        onClick={() =>
-                          void change((d) => ({
-                            ...d,
-                            entries: d.entries.map((e) =>
-                              e.id === duplicate(s, d.entries)?.id
-                                ? { ...e, smsId: s.id }
-                                : e,
-                            ),
-                            suggestions: d.suggestions.map((x) =>
-                              x.id === s.id ? { ...x, dismissed: true } : x,
-                            ),
-                          }))
-                        }
-                      >
-                        Match existing
-                      </button>
-                    )}
-                    <button
-                      className="secondary"
-                      onClick={() => {
-                        setSuggestion(s);
-                        setEdit(null);
-                        setModal("entry");
-                      }}
-                    >
-                      Review <ArrowRight size={14} />
-                    </button>
-                  </div>
-                </div>
-              ))}
-              {!pending.length && (
-                <Empty
-                  icon={Inbox}
-                  title="All caught up"
-                  text="Your bank-message suggestions will appear here after a review."
-                />
-              )}
-            </>
-          )}
           {modal === "conflict" && conflict && (
             <>
               <p className="dialog-intro">
@@ -1933,7 +1981,6 @@ function App() {
               busy={busy}
               attempt={attempt}
               refresh={sync}
-              openSettings={() => setModal("settings")}
             />
           )}
         </Dialog>
@@ -1996,8 +2043,19 @@ function Dialog({
   const ref = useRef<HTMLDivElement>(null);
   useEffect(() => {
     const previous = document.activeElement as HTMLElement;
+    const dismissLayer = () => {
+      const target = ref.current?.querySelector<HTMLButtonElement>(
+        '[role="combobox"][aria-expanded="true"], [aria-label="Close number pad"], [data-record-back], .family-back',
+      );
+      if (!target) return false;
+      target.click();
+      return true;
+    };
     const key = (e: KeyboardEvent) => {
-      if (e.key === "Escape" && !fixed) close();
+      if (e.key === "Escape" && !fixed) {
+        e.preventDefault();
+        if (!dismissLayer()) close();
+      }
       if (e.key === "Tab") {
         const nodes = ref.current?.querySelectorAll<HTMLElement>(
           'button:not(:disabled),input:not(:disabled),select,textarea,[tabindex="0"]',
@@ -2024,20 +2082,7 @@ function Dialog({
     document.addEventListener("keydown", key);
     const nativeBack = isAndroid
       ? CapacitorApp.addListener("backButton", () => {
-          const expanded = ref.current?.querySelector<HTMLButtonElement>(
-            '[role="combobox"][aria-expanded="true"]',
-          );
-          if (expanded) {
-            expanded.click();
-            return;
-          }
-          const pad = ref.current?.querySelector<HTMLButtonElement>(
-            '[aria-label="Close number pad"]',
-          );
-          if (pad) {
-            pad.click();
-            return;
-          }
+          if (dismissLayer()) return;
           if (!fixed) close();
         })
       : null;
@@ -2090,6 +2135,7 @@ function EntryForm({
   onSave,
   onDelete,
   sharedOnly,
+  householdConnected = false,
 }: {
   data: Data;
   entry: Entry | null;
@@ -2098,12 +2144,13 @@ function EntryForm({
   onSave: (e: Entry) => void;
   onDelete?: () => void;
   sharedOnly?: boolean;
+  householdConnected?: boolean;
 }) {
   const [type, setType] = useState<Entry["type"]>(
       entry?.type || suggestion?.type || "expense",
     ),
     [error, setError] = useState(""),
-    [stage, setStage] = useState(entry ? "details" : "amount"),
+    [stage, setStage] = useState(entry || suggestion ? "details" : "amount"),
     [amountValue, setAmountValue] = useState(
       entry
         ? String(Math.abs(entry.amount) / 100)
@@ -2161,7 +2208,7 @@ function EntryForm({
                 ? "Transfer"
                 : type === "adjustment"
                   ? "Balance adjustment"
-                  : String(f.get("category")),
+                  : String(f.get("category") || ""),
             payee: String(f.get("payee") || ""),
             note: String(f.get("note") || ""),
             date: String(f.get("date")),
@@ -2197,11 +2244,17 @@ function EntryForm({
         </div>
       )}
       <div className="composer-step-label">
-        <span>0{stage === "amount" ? 1 : 2} / 02</span>
         <span>
-          {stage === "amount"
-            ? "START WITH THE NUMBER"
-            : "GIVE IT A LITTLE CONTEXT"}
+          {suggestion
+            ? "FROM BANK MESSAGE"
+            : `0${stage === "amount" ? 1 : 2} / 02`}
+        </span>
+        <span>
+          {suggestion
+            ? "REVIEW & LABEL"
+            : stage === "amount"
+              ? "START WITH THE NUMBER"
+              : "GIVE IT A LITTLE CONTEXT"}
         </span>
       </div>
       <MoneyField
@@ -2238,7 +2291,13 @@ function EntryForm({
             <ChoiceField
               label={type === "transfer" ? "From account" : "Account"}
               name="account"
-              defaultValue={entry?.account || data.accounts[0]?.id}
+              defaultValue={
+                entry?.account ||
+                (suggestion && data.accounts.length > 1
+                  ? ""
+                  : data.accounts[0]?.id)
+              }
+              placeholder="Choose an account"
               options={data.accounts.map((a) => ({
                 value: a.id,
                 label: a.name,
@@ -2261,7 +2320,8 @@ function EntryForm({
               <ChoiceField
                 label="Category"
                 name="category"
-                defaultValue={entry?.category || "Other"}
+                defaultValue={entry?.category || (suggestion ? "" : "Other")}
+                placeholder="Choose a category"
                 options={Array.from(
                   new Set([
                     ...data.categories,
@@ -2294,15 +2354,20 @@ function EntryForm({
             </label>
           )}
         </div>
-        <label>
-          Note <span className="subtle">optional</span>
-          <textarea
-            name="note"
-            placeholder="A little context, if you like"
-            maxLength={500}
-            defaultValue={entry?.note}
-          />
-        </label>
+        <details className="composer-optional" open={!!entry?.note}>
+          <summary>
+            Add a note <span>optional</span>
+          </summary>
+          <label>
+            Note <span className="subtle">optional</span>
+            <textarea
+              name="note"
+              placeholder="A little context, if you like"
+              maxLength={500}
+              defaultValue={entry?.note}
+            />
+          </label>
+        </details>
         {type === "adjustment" && (
           <ChoiceField
             label="Direction"
@@ -2331,13 +2396,21 @@ function EntryForm({
             <span>
               <strong>Share with household</strong>
               <small>
-                Only this expense. Your account balance stays private.
+                {householdConnected
+                  ? "Only this expense. Your account balance stays private."
+                  : "Saved on this phone. Connect your family to sync shared expenses."}
               </small>
             </span>
           </label>
         )}
         <button className="primary wide" disabled={busy || entry?.deleted}>
-          {busy ? "Saving…" : entry ? "Save changes" : "Save transaction"}
+          {busy
+            ? "Saving…"
+            : entry
+              ? "Save changes"
+              : suggestion
+                ? "Label & save"
+                : "Save transaction"}
           <Check size={17} />
         </button>
         {onDelete && (
@@ -2353,6 +2426,7 @@ function EntryForm({
         )}
         <button
           className="composer-back text-button"
+          data-record-back={!entry && !suggestion ? "true" : undefined}
           type="button"
           onClick={() => setStage("amount")}
         >
@@ -2541,9 +2615,6 @@ function CloudSettings({
   onRestore: (d: Data, r: number) => Promise<void>;
   lastSync: string;
 }) {
-  const [email, setEmail] = useState(""),
-    [sent, setSent] = useState(false),
-    [code, setCode] = useState("");
   return (
     <div className="settings-section">
       <h3>Family sync & cloud backup</h3>
@@ -2562,53 +2633,7 @@ function CloudSettings({
             Sign in to connect your family and keep a private cloud backup.
             Local records work without an account.
           </p>
-          <form
-            onSubmit={(e) => {
-              e.preventDefault();
-              void attempt(async () => {
-                if (sent) {
-                  const { error } = await cloud!.auth.verifyOtp({
-                    email,
-                    token: code,
-                    type: "email",
-                  });
-                  if (error) throw error;
-                  toast("Signed in.");
-                } else {
-                  const { error } = await cloud!.auth.signInWithOtp({ email });
-                  if (error) throw error;
-                  setSent(true);
-                  toast("Check your email for the sign-in code.");
-                }
-              });
-            }}
-          >
-            <label>
-              Email
-              <input
-                type="email"
-                required
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                disabled={sent}
-              />
-            </label>
-            {sent && (
-              <label>
-                Email code
-                <input
-                  required
-                  value={code}
-                  onChange={(e) => setCode(e.target.value)}
-                  inputMode="numeric"
-                  autoComplete="one-time-code"
-                />
-              </label>
-            )}
-            <button className="secondary wide" disabled={busy}>
-              {sent ? "Verify code" : "Send sign-in code"}
-            </button>
-          </form>
+          <EmailSignIn busy={busy} attempt={attempt} />
         </>
       ) : (
         <>
@@ -2671,159 +2696,4 @@ function CloudSettings({
     </div>
   );
 }
-function FamilySettings({
-  user,
-  group,
-  members,
-  name,
-  busy,
-  attempt,
-  refresh,
-  openSettings,
-}: {
-  user: string | null;
-  group: Household | null;
-  members: Member[];
-  name: string;
-  busy: boolean;
-  attempt: (fn: () => Promise<void>) => Promise<void>;
-  refresh: () => Promise<void>;
-  openSettings: () => void;
-}) {
-  const [invite, setInvite] = useState("");
-  if (!user)
-    return (
-      <>
-        <p className="dialog-intro">
-          Connect your account to create or join a household. Everyone keeps
-          their own private space.
-        </p>
-        <button className="primary wide" onClick={openSettings}>
-          Go to sync settings <ArrowRight size={16} />
-        </button>
-      </>
-    );
-  return (
-    <>
-      {group ? (
-        <>
-          <p className="dialog-intro">{group.name}</p>
-          {members.map((m) => (
-            <div className="payer-row" key={m.user_id}>
-              <span className="avatar">{m.name[0]}</span>
-              <strong>{m.name}</strong>
-              <small>{m.user_id === group.owner ? "Owner" : "Member"}</small>
-              {group.owner === user && m.user_id !== user && (
-                <button
-                  className="icon-button"
-                  aria-label={"Remove " + m.name}
-                  onClick={() => {
-                    if (
-                      confirm(
-                        `Remove ${m.name}? They will lose server access. Previously downloaded records cannot be erased remotely.`,
-                      )
-                    )
-                      void attempt(async () => {
-                        await rpc("remove_member", { member_id: m.user_id });
-                        await refresh();
-                      });
-                  }}
-                >
-                  <X size={16} />
-                </button>
-              )}
-            </div>
-          ))}
-          {group.owner === user && (
-            <>
-              <button
-                className="secondary wide"
-                disabled={busy}
-                onClick={() =>
-                  void attempt(async () =>
-                    setInvite(await rpc<string>("create_invite")),
-                  )
-                }
-              >
-                <Plus size={16} /> Create invitation
-              </button>
-              {invite && (
-                <div className="invite-code">
-                  <small>Single-use code · expires in 24 hours</small>
-                  <strong>{invite}</strong>
-                  <button
-                    className="text-button"
-                    onClick={() => void navigator.clipboard.writeText(invite)}
-                  >
-                    Copy code
-                  </button>
-                </div>
-              )}
-            </>
-          )}
-          <p className="caption">
-            New members can see household history. Personal records and account
-            balances are never included.
-          </p>
-        </>
-      ) : (
-        <>
-          <form
-            onSubmit={(e) => {
-              e.preventDefault();
-              const f = new FormData(e.currentTarget);
-              void attempt(async () => {
-                await rpc("create_household", {
-                  household_name: String(f.get("name")),
-                  member_name: name,
-                });
-                await refresh();
-              });
-            }}
-          >
-            <label>
-              Household name
-              <input
-                name="name"
-                required
-                defaultValue="Our home"
-                maxLength={60}
-              />
-            </label>
-            <button className="primary wide" disabled={busy}>
-              <Users size={16} /> Create household
-            </button>
-          </form>
-          <div className="divider">or join your family</div>
-          <form
-            onSubmit={(e) => {
-              e.preventDefault();
-              const f = new FormData(e.currentTarget);
-              void attempt(async () => {
-                await rpc("accept_invite", {
-                  invite_code: String(f.get("code")).trim(),
-                  member_name: name,
-                });
-                await refresh();
-              });
-            }}
-          >
-            <label>
-              Invitation code
-              <input
-                name="code"
-                required
-                placeholder="Paste the code from your family"
-              />
-            </label>
-            <button className="secondary wide" disabled={busy}>
-              Join household <ArrowRight size={16} />
-            </button>
-          </form>
-        </>
-      )}
-    </>
-  );
-}
-
 createRoot(document.getElementById("root")!).render(<App />);
