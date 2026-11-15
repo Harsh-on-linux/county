@@ -6,6 +6,7 @@ export function BrandPetals() {
     <>
       {[0, 90, 180, 270].map((rotation) => (
         <path
+          className="brand-petal"
           key={rotation}
           d={petal}
           transform={`rotate(${rotation} 128 128)`}

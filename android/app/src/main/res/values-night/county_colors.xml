@@ -2,4 +2,5 @@
 <resources>
   <color name="county_launch_background">#303236</color>
   <color name="county_launch_foreground">#E65416</color>
+  <color name="county_launch_highlight">#F5F5F5</color>
 </resources>

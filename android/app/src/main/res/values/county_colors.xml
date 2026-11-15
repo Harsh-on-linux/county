@@ -3,4 +3,5 @@
   <color name="county_background">#303236</color>
   <color name="county_launch_background">#D8D6C9</color>
   <color name="county_launch_foreground">#E65416</color>
+  <color name="county_launch_highlight">#E65416</color>
 </resources>

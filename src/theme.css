@@ -33,6 +33,12 @@
 .brand-mark {
   color: var(--signal);
 }
+[data-theme="dark"] .brand-petal {
+  fill: var(--signal);
+}
+[data-theme="dark"] .brand-petal:nth-child(odd) {
+  fill: #f5f5f5;
+}
 .brand-dot,
 .accent {
   color: var(--accent);
