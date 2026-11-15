@@ -1,0 +1,149 @@
+/* Porcelain keys: one quiet resting state, tactile feedback only on press. */
+.county-keypad {
+  --key-fill: #faf8f3;
+  --key-border: #dcd9d1;
+  --key-utility: #e9e6df;
+  --key-shadow: 0 2px 3px #31271a05, inset 0 1px 0 #ffffffb3;
+  padding: 0;
+  margin-top: 25px;
+  border-radius: 0;
+  background: transparent;
+}
+[data-theme="dark"] .county-keypad {
+  --key-fill: #202423;
+  --key-border: #333935;
+  --key-utility: #181c1a;
+  --key-shadow: 0 2px 4px #00000010, inset 0 1px 0 #ffffff04;
+}
+.keypad-heading {
+  margin: 0 5px 15px;
+  min-height: 15px;
+  font-size: 7px;
+  letter-spacing: 0.15em;
+  color: var(--muted);
+}
+.keypad-grid {
+  gap: 10px;
+}
+.keypad-grid > .keypad-key,
+.keypad-grid > .keypad-key:hover {
+  min-height: 62px;
+  padding: 10px 8px;
+  background: var(--key-fill);
+  color: var(--text);
+  border: 1px solid var(--key-border);
+  border-radius: 999px;
+  box-shadow: var(--key-shadow);
+  font-family: var(--font-text);
+  font-size: 29px;
+  font-weight: 450;
+  line-height: 1;
+  letter-spacing: -0.025em;
+  transform: none;
+  user-select: none;
+  -webkit-user-select: none;
+  transition:
+    transform 110ms ease,
+    background 110ms ease,
+    border-color 110ms ease;
+}
+.keypad-numeral {
+  font-variant-numeric: lining-nums tabular-nums;
+}
+.keypad-grid > .keypad-key-utility,
+.keypad-grid > .keypad-key-utility:hover {
+  background: var(--key-utility);
+  color: var(--muted);
+  box-shadow: none;
+}
+.keypad-decimal {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: currentColor;
+}
+.keypad-grid > .keypad-key:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
+}
+.keypad-grid > .keypad-key:active {
+  transform: scale(0.94);
+  background: var(--key-utility);
+  border-color: var(--accent);
+  color: var(--text);
+  box-shadow: inset 0 2px 5px #0000000d;
+}
+.keypad-actions {
+  gap: 12px;
+  margin-top: 20px;
+}
+.keypad-actions > button:first-child {
+  width: 66px;
+  min-width: 66px;
+  min-height: 52px;
+  border: 1px solid var(--key-border);
+  border-radius: 999px;
+  padding: 12px 8px;
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--muted);
+  background: transparent;
+}
+.keypad-actions > .keypad-confirm {
+  min-height: 52px;
+  padding: 9px 10px 9px 21px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 550;
+  letter-spacing: -0.015em;
+}
+.keypad-confirm > svg {
+  width: 16px;
+  height: 16px;
+  padding: 8px;
+  box-sizing: content-box;
+  border-radius: 50%;
+  background: #ffffff12;
+}
+[data-theme="dark"] .keypad-confirm > svg {
+  background: #0000000a;
+}
+@media (max-width: 550px) {
+  .county-keypad {
+    margin-top: 23px;
+  }
+  .keypad-grid {
+    gap: 9px;
+  }
+  .keypad-grid > .keypad-key,
+  .keypad-grid > .keypad-key:hover {
+    min-height: 59px;
+    font-size: 28px;
+  }
+}
+@media (max-width: 360px) {
+  .keypad-grid {
+    gap: 8px;
+  }
+  .keypad-grid > .keypad-key,
+  .keypad-grid > .keypad-key:hover {
+    min-height: 55px;
+    font-size: 26px;
+  }
+  .keypad-heading {
+    margin-bottom: 13px;
+  }
+  .keypad-actions {
+    gap: 10px;
+    margin-top: 17px;
+  }
+  .keypad-actions > button:first-child {
+    width: 59px;
+    min-width: 59px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .keypad-grid > .keypad-key {
+    transition: none;
+  }
+}

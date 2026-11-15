@@ -1,0 +1,90 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      name="viewport"
+      content="width=device-width,initial-scale=1,viewport-fit=cover"
+    />
+    <meta name="theme-color" content="#101211" />
+    <script>
+      try {
+        const appearance = localStorage.getItem("county-appearance");
+        document.documentElement.dataset.theme =
+          appearance === "dark" ||
+          (appearance !== "light" &&
+            matchMedia("(prefers-color-scheme: dark)").matches)
+            ? "dark"
+            : "light";
+      } catch {}
+    </script>
+    <style>
+      .county-boot {
+        position: fixed;
+        inset: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: #f1efe9;
+        color: #252820;
+      }
+      .county-boot svg {
+        visibility: hidden;
+        width: 64px;
+        height: 64px;
+        margin-top: -4vh;
+      }
+      [data-theme="dark"] .county-boot {
+        background: #0e1010;
+        color: #f1f0e7;
+      }
+      @media (prefers-reduced-motion: reduce) {
+        .county-boot svg {
+          visibility: visible;
+        }
+      }
+    </style>
+    <meta
+      name="description"
+      content="Your money. A little clearer. County is your family's offline money companion."
+    />
+    <title>County · Your money, a little clearer</title>
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link
+      rel="preload"
+      href="/fonts/manila-black.woff2"
+      as="font"
+      type="font/woff2"
+      crossorigin
+    />
+    <link
+      rel="preload"
+      href="/fonts/inter-variable.woff2"
+      as="font"
+      type="font/woff2"
+      crossorigin
+    />
+  </head>
+  <body>
+    <div id="root">
+      <div class="county-boot" role="status" aria-label="Opening County">
+        <svg viewBox="0 0 256 256" fill="currentColor" aria-hidden="true">
+          <path d="M127 0 A128 128 0 0 0 0 127 A127 127 0 0 0 127 0Z" />
+          <path
+            d="M127 0 A128 128 0 0 0 0 127 A127 127 0 0 0 127 0Z"
+            transform="rotate(90 128 128)"
+          />
+          <path
+            d="M127 0 A128 128 0 0 0 0 127 A127 127 0 0 0 127 0Z"
+            transform="rotate(180 128 128)"
+          />
+          <path
+            d="M127 0 A128 128 0 0 0 0 127 A127 127 0 0 0 127 0Z"
+            transform="rotate(270 128 128)"
+          />
+        </svg>
+      </div>
+    </div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>

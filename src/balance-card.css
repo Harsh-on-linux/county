@@ -1,0 +1,111 @@
+/* Slow satin folds, inspired by the supplied card reference. Text stays still. */
+.balance-flow {
+  --flow-base: #e2e3eb;
+  --flow-cool: #b7cfd6;
+  --flow-violet: #b9a9d1;
+  --flow-soft: #e7d9e2;
+  --flow-crest: #ffffffc7;
+  --flow-fold: #a99ac866;
+  --flow-glow: #f8faf5bd;
+  --flow-veil: #eef0ef45;
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  overflow: hidden;
+  pointer-events: none;
+  border-radius: inherit;
+  background: var(--flow-base);
+  contain: paint;
+}
+[data-theme="dark"] .balance-flow {
+  --flow-base: #2c2d37;
+  --flow-cool: #43535b;
+  --flow-violet: #655477;
+  --flow-soft: #514557;
+  --flow-crest: #b6b4ce44;
+  --flow-fold: #181a2966;
+  --flow-glow: #a9bdc22e;
+  --flow-veil: #20212c38;
+}
+.balance-flow-wash,
+.balance-flow-ribbon,
+.balance-flow-glow {
+  position: absolute;
+  animation-play-state: paused;
+  animation-timing-function: ease-in-out;
+  animation-iteration-count: infinite;
+  animation-direction: alternate;
+}
+.balance-flow-wash {
+  inset: -35%;
+  background:
+    radial-gradient(ellipse at 16% 25%, var(--flow-cool), transparent 58%),
+    radial-gradient(ellipse at 76% 62%, var(--flow-violet), transparent 58%),
+    radial-gradient(ellipse at 40% 90%, var(--flow-soft), transparent 54%);
+  animation-name: county-balance-wash;
+  animation-duration: 16s;
+}
+.balance-flow-ribbon {
+  inset: -95% -65%;
+  background: linear-gradient(
+    105deg,
+    transparent 27%,
+    var(--flow-fold) 36%,
+    transparent 43%,
+    var(--flow-crest) 50%,
+    var(--flow-crest) 52%,
+    transparent 61%,
+    var(--flow-fold) 70%,
+    transparent 80%
+  );
+  animation-name: county-balance-ribbon;
+  animation-duration: 12s;
+}
+.balance-flow-glow {
+  inset: -45%;
+  background: radial-gradient(
+    ellipse at 60% 50%,
+    var(--flow-glow),
+    transparent 53%
+  );
+  animation-name: county-balance-glow;
+  animation-duration: 19s;
+}
+.balance-flow::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, var(--flow-veil), transparent 80%);
+}
+.balance-flow[data-running="true"] > div {
+  animation-play-state: running;
+}
+@keyframes county-balance-wash {
+  from {
+    transform: translate(-5%, -3%) scale(1.03) rotate(-4deg);
+  }
+  to {
+    transform: translate(5%, 4%) scale(1.12) rotate(4deg);
+  }
+}
+@keyframes county-balance-ribbon {
+  from {
+    transform: translate(-17%, 4%) rotate(-12deg);
+  }
+  to {
+    transform: translate(16%, -4%) rotate(8deg);
+  }
+}
+@keyframes county-balance-glow {
+  from {
+    transform: translate(10%, -7%) scale(1.04);
+  }
+  to {
+    transform: translate(-12%, 8%) scale(1.16);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .balance-flow > div {
+    animation: none;
+  }
+}

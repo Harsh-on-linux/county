@@ -1,0 +1,127 @@
+/* One flat mark. Anime.js owns the rise and the synchronised star aperture. */
+.opening-screen {
+  --intro-paper: #f1efe9;
+  --intro-ink: #252820;
+  --intro-size: 104px;
+  position: fixed;
+  inset: 0;
+  z-index: 250;
+  display: block;
+  background: transparent;
+  color: var(--intro-ink);
+  overflow: hidden;
+  isolation: isolate;
+  animation: none;
+}
+[data-theme="dark"] .opening-screen {
+  --intro-paper: #0e1010;
+  --intro-ink: #f1f0e7;
+}
+.intro-curtain {
+  position: absolute;
+  inset: 0;
+  display: block;
+  pointer-events: none;
+}
+.intro-curtain-fill {
+  fill: var(--intro-paper);
+}
+.intro-portal-mark {
+  visibility: hidden;
+  color: var(--intro-ink);
+  fill: currentColor;
+}
+.intro-stage {
+  position: absolute;
+  left: 50%;
+  top: 48%;
+  width: var(--intro-size);
+  height: var(--intro-size);
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+}
+.intro-flight,
+.intro-coin,
+.intro-face {
+  width: 100%;
+  height: 100%;
+  position: relative;
+}
+.intro-flight,
+.intro-wordmark {
+  will-change: transform, opacity;
+}
+.intro-flight {
+  transform: translateY(calc(52vh + var(--intro-size)));
+}
+.intro-coin {
+  animation: none;
+}
+.intro-face {
+  color: var(--intro-ink);
+}
+.intro-face > .brand-mark {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+.intro-wordmark {
+  position: absolute;
+  top: calc(48% + 84px);
+  left: 0;
+  width: 100%;
+  text-align: center;
+  font-family: var(--font-display);
+  font-size: 35px;
+  font-weight: 900;
+  line-height: 1.15;
+  letter-spacing: -0.03em;
+  color: var(--intro-ink);
+  opacity: 0;
+}
+.intro-wordmark > span {
+  color: var(--accent);
+}
+.intro-skip {
+  position: absolute;
+  right: 23px;
+  bottom: calc(25px + env(safe-area-inset-bottom, 0px));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 44px;
+  padding: 10px 12px;
+  color: var(--muted);
+  font-family: var(--font-text);
+  font-size: 10px;
+  font-weight: 450;
+  letter-spacing: -0.01em;
+}
+.intro-skip:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+  border-radius: 999px;
+}
+.opening-waiting .intro-flight,
+.opening-waiting .intro-wordmark {
+  visibility: hidden;
+}
+@media (max-width: 360px) {
+  .opening-screen {
+    --intro-size: 96px;
+  }
+  .intro-wordmark {
+    font-size: 32px;
+    top: calc(48% + 78px);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .intro-flight {
+    transform: none;
+  }
+  .intro-flight,
+  .intro-wordmark {
+    will-change: auto;
+  }
+}

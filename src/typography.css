@@ -1,0 +1,720 @@
+@font-face {
+  font-family: "Manila Black";
+  src: url("/fonts/manila-black.woff2") format("woff2");
+  font-style: normal;
+  font-weight: 900;
+  font-display: swap;
+}
+@font-face {
+  font-family: "County Inter";
+  src: url("/fonts/inter-variable.woff2") format("woff2");
+  font-style: normal;
+  font-weight: 100 900;
+  font-display: swap;
+}
+
+:root {
+  --font-display: "Manila Black", Georgia, serif;
+  --font-text: "County Inter", sans-serif;
+  --space-section: 30px;
+  font-family: var(--font-text);
+  font-size: 14px;
+  font-optical-sizing: auto;
+  line-height: 1.5;
+  font-synthesis: none;
+  --bg: #f1efe9;
+  --surface: #fbfaf7;
+  --surface2: #e7e4de;
+  --muted: #72716d;
+}
+[data-theme="dark"] {
+  --bg: #0e1010;
+  --surface: #1a1c1c;
+  --surface2: #252727;
+  --muted: #a0a19a;
+}
+
+.brand,
+.onboarding-wordmark,
+.opening-identity > span {
+  font-family: var(--font-display);
+  font-weight: 900;
+  letter-spacing: -0.035em;
+  line-height: 1.1;
+}
+.brand {
+  gap: 11px;
+}
+.brand.small {
+  font-size: 30px;
+}
+.sidebar .brand {
+  font-size: 35px;
+}
+.brand-dot {
+  color: var(--text);
+}
+.onboarding-wordmark > span {
+  margin-left: -9px;
+}
+
+.onboarding-header > .onboarding-wordmark {
+  font-size: 31px;
+}
+
+.page-heading h1,
+.page-home .page-heading h1,
+.onboarding-copy h1,
+.onboarding-setup-copy h1,
+.onboarding-ready h1,
+.onboarding-editorial h2,
+.county-unlock h1,
+.household-hero h2 {
+  font-family: var(--font-display);
+  font-weight: 900;
+  letter-spacing: -0.035em;
+  line-height: 1.1;
+  text-wrap: balance;
+}
+.page-heading h1 {
+  font-size: 46px;
+}
+.page-home .page-heading h1 {
+  font-size: 31px;
+}
+.page-heading p {
+  font-size: 13px;
+  line-height: 1.75;
+  margin-top: 12px;
+}
+.page-home .page-heading p {
+  font-size: 12px;
+  margin-top: 9px;
+}
+.page-heading {
+  margin-bottom: var(--space-section);
+}
+.daily-edition {
+  gap: 24px;
+  padding-top: 19px;
+  margin-bottom: 24px;
+}
+.edition-day {
+  font-family: var(--font-text);
+  font-weight: 560;
+  font-size: 120px;
+  line-height: 0.88;
+  letter-spacing: -0.075em;
+  font-variant-numeric: lining-nums tabular-nums;
+}
+.daily-edition strong {
+  font-size: 12px;
+  font-weight: 650;
+  letter-spacing: 0.025em;
+}
+.daily-edition > div > span {
+  font-size: 11px;
+  line-height: 1.55;
+}
+.daily-edition small {
+  font-size: 7px;
+  letter-spacing: 0.14em;
+  margin-top: 9px;
+}
+.daily-edition > .brand-mark {
+  width: 42px;
+  height: 42px;
+  margin-top: 4px;
+}
+.eyebrow,
+.onboarding-kicker {
+  font-family: var(--font-text);
+  font-size: 8px;
+  font-weight: 550;
+  letter-spacing: 0.16em;
+  line-height: 1.6;
+}
+
+.section-top h2,
+.pulse-heading h2 {
+  font-family: var(--font-display);
+  font-weight: 900;
+  font-size: 22px;
+  line-height: 1.15;
+  letter-spacing: -0.025em;
+}
+.month-summary .section-top h2 {
+  font-family: var(--font-text);
+  font-size: 9px;
+  font-weight: 600;
+  letter-spacing: 0.11em;
+}
+.pulse-heading h2 {
+  font-size: 31px;
+  max-width: 210px;
+}
+.pulse-heading h2 span {
+  color: var(--text);
+}
+.pulse-heading .eyebrow {
+  font-size: 7px;
+  letter-spacing: 0.14em;
+}
+.section-top {
+  align-items: baseline;
+  margin-bottom: 20px;
+}
+.section-top .count {
+  font-family: var(--font-text);
+  vertical-align: middle;
+  margin-left: 7px;
+}
+.dialog-heading h2 {
+  font-family: var(--font-display);
+  font-size: 26px;
+  font-weight: 900;
+  line-height: 1.15;
+  letter-spacing: -0.025em;
+}
+.dialog-heading {
+  align-items: flex-start;
+  margin-bottom: 25px;
+}
+.dialog-intro {
+  font-size: 13px;
+  line-height: 1.8;
+}
+.empty h3 {
+  font-family: var(--font-display);
+  font-size: 22px;
+  font-weight: 900;
+  line-height: 1.18;
+  letter-spacing: -0.025em;
+  max-width: 250px;
+}
+.empty p {
+  font-size: 12px;
+  line-height: 1.8;
+  margin-top: 12px;
+}
+
+.balance-amount,
+.summary-line strong,
+.account-bottom > span,
+.transaction-amount,
+.category-label strong,
+.household-stats strong,
+.insight-stats strong,
+.money-display > input,
+.keypad-grid > button,
+.ready-account strong {
+  font-family: var(--font-text);
+  font-variant-numeric: lining-nums tabular-nums;
+  font-feature-settings:
+    "tnum" 1,
+    "lnum" 1;
+}
+.balance-amount {
+  font-size: 45px;
+  font-weight: 500;
+  line-height: 1.12;
+  letter-spacing: -0.055em;
+}
+.balance-card .card-top {
+  font-size: 8px;
+  letter-spacing: 0.13em;
+}
+.balance-card > p {
+  font-size: 11px;
+  line-height: 1.6;
+}
+.balance-bottom {
+  font-size: 10px;
+}
+.balance-bottom button {
+  font-size: 10px;
+  font-weight: 550;
+}
+.summary-line strong {
+  font-size: 26px;
+  font-weight: 500;
+  line-height: 1.18;
+  letter-spacing: -0.045em;
+}
+.summary-line small {
+  font-size: 11px;
+  line-height: 1.45;
+}
+.account-card > strong {
+  font-size: 12px;
+  font-weight: 550;
+  letter-spacing: -0.015em;
+  line-height: 1.4;
+}
+.account-top {
+  font-size: 7px;
+  font-weight: 550;
+  letter-spacing: 0.12em;
+}
+.account-bottom > span {
+  font-size: 22px;
+  font-weight: 500;
+  line-height: 1.2;
+  letter-spacing: -0.045em;
+}
+.account-card {
+  gap: 18px;
+}
+.transaction strong {
+  font-size: 13px;
+  font-weight: 550;
+  letter-spacing: -0.02em;
+  line-height: 1.45;
+}
+.transaction small {
+  font-size: 10px;
+  font-weight: 400;
+  line-height: 1.55;
+  margin-top: 5px;
+}
+.transaction-amount strong {
+  font-size: 13px;
+  font-weight: 550;
+  letter-spacing: -0.025em;
+}
+.transaction {
+  padding: 18px 0;
+}
+.category-label {
+  font-size: 12px;
+  font-weight: 450;
+  letter-spacing: -0.01em;
+}
+.category-label strong {
+  font-size: 12px;
+  font-weight: 550;
+  letter-spacing: -0.025em;
+}
+.money-display > input {
+  font-weight: 500;
+  letter-spacing: -0.04em;
+}
+.money-hero .money-display > input {
+  font-size: 51px;
+  line-height: 1.15;
+  font-weight: 500;
+  letter-spacing: -0.06em;
+}
+.money-hero .money-display > span {
+  font-size: 30px;
+  line-height: 1.2;
+}
+.money-hero .money-field-label {
+  font-size: 9px !important;
+  letter-spacing: 0.12em;
+}
+.keypad-grid > button {
+  font-size: 27px;
+  font-weight: 450;
+  line-height: 1.25;
+  letter-spacing: -0.025em;
+}
+.choice-label,
+.onboarding-form label {
+  font-size: 11px;
+  font-weight: 450;
+  line-height: 1.5;
+}
+.choice-trigger {
+  font-size: 12px;
+  font-weight: 450;
+  line-height: 1.5;
+}
+.primary,
+.secondary,
+.onboarding-cta,
+.keypad-confirm {
+  font-family: var(--font-text);
+  font-weight: 550;
+  letter-spacing: -0.015em;
+}
+.text-button {
+  font-size: 11px;
+  font-weight: 550;
+  letter-spacing: -0.015em;
+}
+.setting-row strong {
+  font-size: 12px;
+  font-weight: 550;
+  line-height: 1.5;
+}
+.setting-row small {
+  font-size: 11px;
+  line-height: 1.65;
+}
+.settings-section h3 {
+  font-size: 11px;
+  letter-spacing: 0.02em;
+  font-weight: 600;
+}
+.household-hero h2 {
+  font-size: 39px;
+}
+.household-hero p {
+  font-size: 13px;
+  line-height: 1.75;
+}
+.household-stats strong,
+.insight-stats strong {
+  font-size: 37px;
+  font-weight: 500;
+  letter-spacing: -0.05em;
+  line-height: 1.15;
+}
+.payer-row strong {
+  font-weight: 550;
+  letter-spacing: -0.015em;
+}
+
+.onboarding-copy h1 {
+  font-size: 49px;
+  line-height: 1.04;
+  letter-spacing: -0.035em;
+  margin-top: 17px;
+  margin-bottom: 21px;
+}
+.onboarding-setup-copy h1 {
+  font-size: 44px;
+  margin-top: 16px;
+  margin-bottom: 17px;
+}
+.onboarding-copy p,
+.onboarding-setup-copy p,
+.onboarding-ready > p {
+  font-size: 13px;
+  line-height: 1.8;
+  letter-spacing: -0.01em;
+}
+.onboarding-editorial h2 {
+  font-size: clamp(44px, 4.7vw, 72px);
+  line-height: 1.04;
+  letter-spacing: -0.035em;
+}
+.onboarding-editorial p {
+  font-size: 13px;
+  line-height: 1.9;
+}
+.onboarding-ready h1 {
+  font-size: 41px;
+  line-height: 1.12;
+}
+.onboarding-actions {
+  margin-top: 31px;
+}
+.onboarding-cta {
+  font-size: 12px;
+  min-height: 55px;
+  padding-left: 21px;
+  padding-right: 20px;
+}
+.onboarding-footnote {
+  font-size: 10px;
+  line-height: 1.7;
+}
+.onboarding-bottom-note {
+  font-size: 9px;
+  line-height: 1.6;
+  letter-spacing: 0.015em;
+}
+.ready-account strong {
+  font-size: 22px;
+  letter-spacing: -0.045em;
+}
+.space-illustration > strong {
+  font-family: var(--font-display);
+  font-size: 23px;
+  font-weight: 900;
+  letter-spacing: -0.025em;
+}
+.welcome-money-card > strong {
+  font-family: var(--font-text);
+  font-weight: 500;
+  font-size: 31px;
+  letter-spacing: -0.05em;
+}
+
+/* Two independent floating islands; same approximate 60:40 allocation. */
+.dock-controls {
+  display: grid;
+  grid-template-columns: minmax(0, 1.6fr) minmax(0, 1fr);
+  gap: 12px;
+  padding: 0;
+  background: transparent;
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+  align-items: stretch;
+}
+.dock-switch,
+.dock-record {
+  width: 100%;
+  min-width: 0;
+  min-height: 58px;
+  border-radius: 999px;
+  box-sizing: border-box;
+  box-shadow: 0 6px 22px #0b0d1120;
+  font-family: var(--font-text);
+  line-height: 1;
+}
+.dock-switch {
+  background: #191b1d;
+  border: 1px solid #ffffff1a;
+  padding: 14px 15px;
+  gap: 10px;
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: -0.02em;
+}
+.dock-switch > small {
+  font-size: 9px;
+  font-weight: 450;
+  letter-spacing: 0.04em;
+  color: #b5b6b3;
+}
+.dock-active-dot {
+  width: 4px;
+  height: 4px;
+  background: #f88b5c;
+}
+.dock-switch > svg {
+  width: 14px;
+}
+.dock-record {
+  padding: 14px 13px;
+  gap: 6px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  background: linear-gradient(145deg, #ffb48b 0%, #f68b58 48%, #ed713d 100%);
+  border: 1px solid #ffc09970;
+  box-shadow:
+    inset 0 1px 1px #fff1de70,
+    0 6px 22px #9d492426;
+}
+.dock-record > .brand-mark {
+  width: 17px;
+  height: 17px;
+}
+.dock-record > svg:last-child {
+  width: 12px;
+}
+.dock-destinations {
+  bottom: 76px;
+  border-radius: 24px;
+  padding: 20px 22px 10px;
+}
+.dock-destinations strong {
+  font-family: var(--font-display);
+  font-size: 23px;
+  font-weight: 900;
+  line-height: 1.12;
+  letter-spacing: -0.025em;
+}
+.dock-destinations small {
+  font-size: 10px;
+  line-height: 1.5;
+  margin-top: 6px;
+}
+.dock-destinations > button {
+  padding: 18px 0;
+}
+.dock-index {
+  font-family: var(--font-text);
+  font-size: 9px;
+  line-height: 1.4;
+}
+.dock-menu-caption {
+  font-size: 8px;
+  line-height: 1.5;
+  letter-spacing: 0.14em;
+}
+
+@media (max-width: 800px) {
+  .county-dock {
+    width: 337px;
+    max-width: calc(100% - 34px);
+  }
+  .daily-edition {
+    gap: 22px;
+    margin-bottom: 23px;
+  }
+  .edition-day {
+    font-size: 112px;
+  }
+  .daily-edition strong {
+    font-size: 11px;
+  }
+  .daily-edition > .brand-mark {
+    width: 35px;
+    height: 35px;
+  }
+  .page-home .page-heading h1 {
+    font-size: 29px;
+  }
+  .page-home .page-heading p {
+    font-size: 11px;
+    line-height: 1.75;
+    max-width: 295px;
+  }
+  .page-heading h1 {
+    font-size: 40px;
+  }
+  .page-heading p {
+    font-size: 12px;
+  }
+  .balance-amount {
+    font-size: 43px;
+  }
+  .balance-card > p {
+    font-size: 10px;
+  }
+  .section-top h2 {
+    font-size: 21px;
+  }
+  .month-summary .section-top h2 {
+    font-size: 9px;
+  }
+  .dialog-heading h2 {
+    font-size: 25px;
+  }
+  .pulse-heading h2 {
+    font-size: 30px;
+  }
+  .onboarding-header > .onboarding-wordmark {
+    font-size: 30px;
+  }
+  .onboarding-copy h1 {
+    font-size: 45px;
+  }
+  .onboarding-setup-copy h1 {
+    font-size: 39px;
+  }
+  .onboarding-ready h1 {
+    font-size: 37px;
+  }
+  .onboarding-copy p,
+  .onboarding-setup-copy p {
+    font-size: 12px;
+  }
+  .money-hero .money-display > input {
+    font-size: 47px;
+  }
+  .money-display > input {
+    font-size: 23px;
+  }
+  .transaction strong {
+    font-size: 12px;
+  }
+  .transaction-amount strong {
+    font-size: 12px;
+  }
+}
+@media (max-width: 550px) {
+  .edition-day {
+    font-size: 108px;
+  }
+  .balance-amount {
+    font-size: 43px;
+  }
+  .account-bottom > span {
+    font-size: 20px;
+  }
+  .summary-line strong {
+    font-size: 25px;
+  }
+  .pulse-heading h2 {
+    font-size: 28px;
+    max-width: 195px;
+  }
+  .pulse-heading .eyebrow {
+    font-size: 7px;
+    letter-spacing: 0.1em;
+  }
+  .keypad-grid > button {
+    font-size: 27px;
+  }
+  .dock-switch {
+    padding-left: 14px;
+    padding-right: 13px;
+    gap: 8px;
+  }
+  .dock-record {
+    padding: 14px 11px;
+  }
+  .onboarding-kicker {
+    font-size: 7px;
+    letter-spacing: 0.14em;
+  }
+}
+@media (max-width: 360px) {
+  .county-dock {
+    max-width: calc(100% - 28px);
+  }
+  .dock-controls {
+    gap: 10px;
+  }
+  .dock-switch {
+    padding-left: 12px;
+    padding-right: 11px;
+    gap: 7px;
+    font-size: 11px;
+  }
+  .dock-record {
+    padding: 13px 9px;
+    gap: 5px;
+    font-size: 10px;
+  }
+  .dock-switch,
+  .dock-record {
+    min-height: 55px;
+  }
+  .dock-switch > small {
+    font-size: 8px;
+  }
+  .dock-record > svg:last-child {
+    width: 11px;
+  }
+  .brand.small {
+    font-size: 28px;
+  }
+  .edition-day {
+    font-size: 96px;
+  }
+  .daily-edition {
+    gap: 20px;
+  }
+  .page-home .page-heading h1 {
+    font-size: 27px;
+  }
+  .balance-amount {
+    font-size: 37px;
+  }
+  .section-top h2 {
+    font-size: 20px;
+  }
+  .pulse-heading h2 {
+    font-size: 26px;
+  }
+  .onboarding-copy h1 {
+    font-size: 39px;
+  }
+  .onboarding-setup-copy h1 {
+    font-size: 36px;
+  }
+  .onboarding-ready h1 {
+    font-size: 34px;
+  }
+  .money-hero .money-display > input {
+    font-size: 41px;
+  }
+}

@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">County</string>
+    <string name="title_activity_main">County</string>
+    <string name="package_name">app.county.money</string>
+    <string name="custom_url_scheme">app.county.money</string>
+</resources>
