@@ -1,0 +1,369 @@
+/* County's graphic signature: etched routes, warm foil and precise edges. */
+.contour-lines {
+  display: block;
+  pointer-events: none;
+}
+.balance-card {
+  border-color: #d9b99b;
+  border-radius: 20px;
+  box-shadow: inset 0 1px 0 #fff9;
+}
+[data-theme="dark"] .balance-card {
+  border-color: #e7bb9130;
+  box-shadow: inset 0 1px 0 #ffffff0d;
+}
+.balance-contours {
+  position: absolute;
+  width: 390px;
+  height: 300px;
+  right: -56px;
+  top: -20px;
+  color: #a2461e;
+  opacity: 0.3;
+}
+[data-theme="dark"] .balance-contours {
+  color: #f1bf98;
+  opacity: 0.16;
+}
+.balance-flow-emblem {
+  opacity: 0.045;
+}
+.balance-card .card-top > svg {
+  padding: 6px;
+  width: 20px;
+  height: 20px;
+  box-sizing: content-box;
+  background: #ffffff48;
+  border: 1px solid #ffffff85;
+  border-radius: 9px;
+}
+[data-theme="dark"] .balance-card .card-top > svg {
+  background: #0b0c0e38;
+  border-color: #ffffff2c;
+}
+.balance-card .balance-bottom {
+  box-shadow: inset 0 1px 0 #fff6;
+}
+[data-theme="dark"] .balance-card .balance-bottom {
+  box-shadow: inset 0 1px 0 #ffffff06;
+}
+.balance-card .balance-bottom button {
+  box-shadow: inset 0 1px 0 #fff9;
+}
+[data-theme="dark"] .balance-card .balance-bottom button {
+  box-shadow: inset 0 1px 0 #ffffff12;
+}
+
+.ledger-statement,
+.insight-overview,
+.household-view .household-hero {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  border-radius: 18px;
+  background: linear-gradient(135deg, #eae7df, #d8d6c9 60%, #e6c9ad);
+  border: 1px solid #d0c9ba;
+}
+[data-theme="dark"] .ledger-statement,
+[data-theme="dark"] .insight-overview,
+[data-theme="dark"] .household-view .household-hero {
+  background:
+    radial-gradient(ellipse at 100% 0%, #71341e50, transparent 68%), #2b2e32;
+  border-color: #8d624139;
+}
+.statement-contours,
+.insight-contours,
+.household-contours {
+  position: absolute;
+  right: -65px;
+  top: -35px;
+  width: 365px;
+  height: 340px;
+  color: #a64d21;
+  opacity: 0.2;
+  mask-image: linear-gradient(90deg, transparent 10%, #000 85%);
+}
+[data-theme="dark"] .statement-contours,
+[data-theme="dark"] .insight-contours,
+[data-theme="dark"] .household-contours {
+  color: #ffc89f;
+  opacity: 0.16;
+}
+.ledger-statement > :not(.contour-lines),
+.insight-overview > :not(.contour-lines),
+.household-hero > :not(.contour-lines):not(.household-burst) {
+  position: relative;
+  z-index: 1;
+}
+.statement-heading > .eyebrow::before,
+.insight-overview > .eyebrow::before {
+  content: "";
+  display: inline-block;
+  width: 20px;
+  height: 2px;
+  vertical-align: middle;
+  margin-right: 9px;
+  background: #e65416;
+}
+.statement-count {
+  padding: 6px 9px;
+  border: 1px solid #6b4d322e;
+  border-radius: 6px;
+  background: #ffffff28;
+  opacity: 1;
+}
+[data-theme="dark"] .statement-count {
+  border-color: #f5d1ad2e;
+  background: #10111328;
+}
+.household-view .household-burst {
+  width: 112px;
+  height: 112px;
+  right: 20px;
+  top: 18px;
+  opacity: 0.09;
+  rotate: -8deg;
+}
+.insight-facts {
+  background: #ffffff12;
+}
+.week-column[aria-pressed="true"] .week-bar {
+  background: linear-gradient(180deg, #ffba80, #f46a20 30%, #c83b0c);
+  box-shadow: inset 1px 0 0 #ffffff38;
+}
+.week-column[aria-pressed="true"] {
+  border: 1px solid var(--line);
+}
+.page-heading .eyebrow {
+  letter-spacing: 0.12em;
+}
+.page-heading .eyebrow::before {
+  content: "";
+  display: inline-block;
+  width: 16px;
+  height: 2px;
+  margin-right: 9px;
+  vertical-align: middle;
+  background: var(--signal);
+}
+
+.account-card[data-account-colour]::after {
+  content: "";
+  position: absolute;
+  right: -28px;
+  bottom: -36px;
+  width: 165px;
+  height: 175px;
+  pointer-events: none;
+  background: linear-gradient(
+    145deg,
+    transparent 42%,
+    var(--account-fill) 43%,
+    color-mix(in srgb, var(--account-ink) 22%, var(--account-fill)) 100%
+  );
+  clip-path: polygon(100% 0, 100% 100%, 0 100%);
+  opacity: 0.72;
+  rotate: -10deg;
+}
+[data-theme="dark"] .account-card[data-account-colour]::after {
+  background: linear-gradient(
+    145deg,
+    transparent 42%,
+    var(--account-dark) 43%,
+    color-mix(in srgb, var(--account-ink) 24%, var(--account-dark)) 100%
+  );
+  opacity: 0.9;
+}
+.account-card[data-account-colour] > * {
+  position: relative;
+  z-index: 1;
+}
+.account-card .account-top > svg {
+  padding: 4px;
+  width: 14px;
+  height: 14px;
+  box-sizing: content-box;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+}
+.account-card[data-account-colour] {
+  border-radius: 15px;
+}
+.review-overview {
+  padding-bottom: 23px;
+  border-bottom: 1px solid var(--line);
+}
+.review-device-note {
+  padding: 9px 11px;
+  border: 1px solid var(--line);
+  background: var(--surface);
+  border-radius: 9px;
+}
+.review-inbox .capture-panel {
+  border-left: 3px solid var(--signal);
+}
+.review-list {
+  border-radius: 16px;
+}
+.review-tabs button[aria-pressed="true"] {
+  border-color: var(--signal);
+}
+.household-contributions .section-top,
+.insight-categories .section-top {
+  padding-bottom: 15px;
+  border-bottom: 1px solid var(--line);
+}
+.contribution-track {
+  height: 4px;
+}
+.contribution-track > span {
+  background: linear-gradient(90deg, #ff9e5c, #e65416);
+}
+
+.onboarding-cta,
+.signin-panel .primary,
+.dock-record,
+[data-theme="dark"] .dock-record {
+  background: linear-gradient(125deg, #ffa359 -30%, #f57524 38%, #e65416 100%);
+  color: #181714;
+  border: 1px solid #c84b1629;
+  box-shadow: inset 0 1px 0 #ffe1b682;
+}
+.poster-contours {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  inset: 0;
+  color: #ffe7d2;
+  opacity: 0.2;
+}
+.poster-caption,
+.poster-kicker,
+.poster-emblem {
+  z-index: 1;
+}
+.welcome-money-card.welcome-poster {
+  border-radius: 18px;
+}
+.dialog-heading {
+  position: relative;
+}
+.dialog-heading::after {
+  content: "";
+  position: absolute;
+  width: 34px;
+  height: 2px;
+  left: 0;
+  bottom: -1px;
+  background: var(--signal);
+}
+.family-settings .family-option {
+  border-radius: 14px;
+  box-shadow: inset 3px 0 0 var(--signal);
+}
+.family-option > svg:first-child {
+  border-radius: 9px;
+}
+.settings-profile {
+  border-radius: 14px;
+  border-left: 3px solid var(--signal);
+}
+.settings-view .theme-option {
+  gap: 12px;
+  padding: 17px;
+}
+.theme-miniature {
+  position: relative;
+  display: block;
+  width: 100%;
+  height: 48px;
+  border: 1px solid #22242624;
+  border-radius: 7px;
+  overflow: hidden;
+  background:
+    radial-gradient(ellipse at 100% 100%, #f16b24, transparent 60%), #f1ece3;
+}
+.theme-miniature > i {
+  position: absolute;
+  display: block;
+  left: 9px;
+  height: 3px;
+  background: #39342c;
+  border-radius: 1px;
+  width: 28%;
+  top: 13px;
+}
+.theme-miniature > i + i {
+  top: 22px;
+  width: 45%;
+  opacity: 0.4;
+}
+.miniature-dark {
+  background:
+    radial-gradient(
+      ellipse at 100% 100%,
+      #f67530,
+      #6d1d0f 35%,
+      transparent 72%
+    ),
+    #161719;
+  border-color: #ffffff28;
+}
+.miniature-dark > i {
+  background: #f5f0e8;
+}
+.miniature-system {
+  background: linear-gradient(90deg, #f1ece3 50%, #161719 50%);
+}
+.miniature-system > i {
+  width: 68%;
+  background: linear-gradient(90deg, #39342c 50%, #f5f0e8 50%);
+}
+.miniature-system > i + i {
+  width: 68%;
+}
+.settings-view .theme-option.selected {
+  border-color: var(--accent);
+  box-shadow: inset 0 0 0 1px var(--accent);
+}
+.settings-tabs > button[aria-selected="true"] {
+  background: linear-gradient(
+    0deg,
+    color-mix(in srgb, var(--signal) 9%, transparent),
+    transparent 75%
+  );
+}
+@media (max-width: 700px) {
+  .balance-contours {
+    right: -95px;
+    top: -8px;
+  }
+  .statement-contours,
+  .insight-contours,
+  .household-contours {
+    right: -115px;
+    opacity: 0.17;
+  }
+  .settings-view .theme-option {
+    padding: 15px 12px;
+  }
+  .review-device-note {
+    max-width: 105px;
+  }
+}
+@media (max-width: 360px) {
+  .balance-contours {
+    right: -130px;
+  }
+  .settings-view .theme-option {
+    padding: 15px 10px;
+  }
+  .theme-miniature {
+    height: 40px;
+  }
+  .review-device-note {
+    padding: 8px;
+    font-size: 12px;
+    max-width: 92px;
+  }
+}

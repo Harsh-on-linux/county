@@ -134,7 +134,7 @@ for (const theme of ["light", "dark"] as const)
     await screenshot(page, `views-home-${theme}`);
     await expect(page.locator(".balance-flow")).toHaveCSS(
       "--flow-start",
-      theme === "light" ? "#f6eadb" : "#111214",
+      theme === "light" ? "#f3f0e8" : "#111214",
     );
     await expect(page.locator(".balance-amount")).toHaveCSS(
       "color",

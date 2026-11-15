@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { BurstMark } from "./BurstMark";
+import { ContourLines } from "./ContourLines";
 
 /** Decorative motion never changes the amount or the card's layout. */
 export function BalanceSurface({ active }: { active: boolean }) {
@@ -40,6 +41,7 @@ export function BalanceSurface({ active }: { active: boolean }) {
       <div className="balance-flow-ribbon" />
       <div className="balance-flow-glow" />
       <BurstMark className="balance-flow-emblem" />
+      <ContourLines className="balance-contours" />
     </div>
   );
 }

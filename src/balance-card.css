@@ -1,18 +1,18 @@
 /* A concentrated orange-to-paper light bloom. The reading area stays dark. */
 .balance-flow {
-  --flow-base: #f2e2cd;
-  --flow-ember: #e78e53;
-  --flow-paper: #fffaf2;
-  --flow-crest: #fffdf7b3;
-  --flow-fold: #da92582e;
-  --flow-glow: #fff7e5bd;
-  --flow-veil: #f5e8d6;
-  --flow-veil-mid: #fff5e8b3;
-  --flow-transition: #ffdeb9;
-  --flow-shadow-stop: #edb286;
-  --flow-start: #f6eadb;
-  --flow-mid: #f5cda7;
-  --flow-end: #e99355;
+  --flow-base: #efece5;
+  --flow-ember: #f5792b;
+  --flow-paper: #fff7e9;
+  --flow-crest: #fffaf0b3;
+  --flow-fold: #bd4c2b30;
+  --flow-glow: #ffc6929c;
+  --flow-veil: #f2efe7;
+  --flow-veil-mid: #f6f0e4c7;
+  --flow-transition: #ffd7a4;
+  --flow-shadow-stop: #bc5026;
+  --flow-start: #f3f0e8;
+  --flow-mid: #eec5a2;
+  --flow-end: #e45d21;
   position: absolute;
   inset: 0;
   z-index: 0;

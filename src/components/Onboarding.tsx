@@ -22,12 +22,14 @@ import { App as CapacitorApp } from "@capacitor/app";
 import "./onboarding.css";
 import { AccountColour } from "./AccountColour";
 import { BurstMark } from "./BurstMark";
+import { ContourLines } from "./ContourLines";
 import { MoneyField } from "./MoneyField";
 
 function WelcomeArt() {
   return (
     <div className="welcome-art" aria-hidden="true">
       <div className="welcome-money-card welcome-poster">
+        <ContourLines className="poster-contours" />
         <span className="poster-kicker">COUNTY / EVERYDAY MONEY</span>
         <BurstMark className="poster-emblem" />
         <div className="poster-caption">

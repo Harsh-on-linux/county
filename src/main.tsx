@@ -109,6 +109,7 @@ import "./readability.css";
 import "./theme.css";
 import "./motion.css";
 import "./views.css";
+import "./signature.css";
 import { LedgerView } from "./components/LedgerView";
 import { HouseholdView } from "./components/HouseholdView";
 import { InsightsView } from "./components/InsightsView";

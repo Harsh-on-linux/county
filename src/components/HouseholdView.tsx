@@ -3,6 +3,7 @@ import { ArrowUpRight, Plus, ShieldCheck, Users } from "lucide-react";
 import { money, totals, type Entry } from "../domain";
 import type { Household, Member } from "../cloud";
 import { BurstMark } from "./BurstMark";
+import { ContourLines } from "./ContourLines";
 
 export function HouseholdView({
   group,
@@ -38,6 +39,7 @@ export function HouseholdView({
     <div className="household-view">
       <section className="household-hero">
         <BurstMark className="household-burst" />
+        <ContourLines className="household-contours" />
         <span className="eyebrow">
           {group ? "YOUR SHARED SPACE" : "A SPACE FOR YOUR PEOPLE"}
         </span>

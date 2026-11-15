@@ -174,6 +174,13 @@ export function SettingsView({
                     }
                   >
                     <Icon size={23} />
+                    <span
+                      className={`theme-miniature miniature-${v}`}
+                      aria-hidden="true"
+                    >
+                      <i />
+                      <i />
+                    </span>
                     <span>{label}</span>
                     {data.theme === v && <Check size={15} />}
                   </button>
