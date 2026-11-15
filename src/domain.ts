@@ -1,4 +1,5 @@
 import { scanBounds } from "./scanRange";
+import { accountColour, accountColours } from "./accountColours";
 export type Account = {
   id: string;
   name: string;
@@ -364,7 +365,8 @@ export function readBackup(raw: string): Data {
       !["bank", "cash", "card", "wallet"].includes(a.type) ||
       !Number.isSafeInteger(a.opening) ||
       (a.color !== undefined &&
-        !["sage", "blue", "lilac", "peach", "rose", "sand"].includes(a.color))
+        a.color !== "sand" &&
+        !accountColours.some((colour) => colour.id === a.color))
     )
       throw new Error("Invalid account in backup.");
     ids.add(a.id);
@@ -415,5 +417,8 @@ export function readBackup(raw: string): Data {
       (s.accountHint !== undefined && typeof s.accountHint !== "string")
     )
       throw new Error("Invalid SMS suggestion.");
+  // Keep older backups readable while replacing the retired Sand colour.
+  for (const account of d.accounts)
+    if (account.color === "sand") account.color = accountColour(account);
   return d as Data;
 }

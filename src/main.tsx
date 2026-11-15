@@ -91,6 +91,7 @@ import { EmailSignIn } from "./components/EmailSignIn";
 import { SignInScreen } from "./components/SignInScreen";
 import { BurstMark } from "./components/BurstMark";
 import { AccountColour, accountColour } from "./components/AccountColour";
+import { newAccountColour } from "./accountColours";
 import { scanBounds, type ScanRange } from "./scanRange";
 import {
   ingestMessages,
@@ -152,8 +153,23 @@ function Logo({ small = false }: { small?: boolean }) {
   );
 }
 function App() {
-  const [opening, setOpening] = useState(true),
-    [welcomePreview, setWelcomePreview] = useState(false),
+  const [opening, setOpening] = useState(true);
+  return (
+    <>
+      {opening && <OpeningScreen onDone={() => setOpening(false)} />}
+      <CountyApp opening={opening} onReplayIntro={() => setOpening(true)} />
+    </>
+  );
+}
+
+function CountyApp({
+  opening,
+  onReplayIntro,
+}: {
+  opening: boolean;
+  onReplayIntro: () => void;
+}) {
+  const [welcomePreview, setWelcomePreview] = useState(false),
     [signInFirst, setSignInFirst] = useState(false);
   const [data, setData] = useState<Data | null>(null),
     [fatal, setFatal] = useState(""),
@@ -224,6 +240,14 @@ function App() {
   useEffect(() => {
     if (!cloud) return;
     let active = true;
+    const startupDeadline = setTimeout(() => {
+      if (!active) return;
+      setAuthReady(true);
+      if (navigator.onLine)
+        setAuthError(
+          "Your connection is taking too long. Sign in again, or reopen County when connected.",
+        );
+    }, 4000);
     const accept = async (id: string | null) => {
       if (!id) {
         if (active) {
@@ -267,19 +291,22 @@ function App() {
       const result = await cloud!.auth.getSession();
       if (result.error) throw result.error;
       await accept(result.data.session?.user.id || null);
-    })().catch((e) => {
-      if (active) {
-        setAuthReady(true);
-        if (navigator.onLine)
-          setAuthError(
-            "Could not check your session. Sign in again to continue.",
-          );
-      }
-    });
+    })()
+      .catch(() => {
+        if (active) {
+          setAuthReady(true);
+          if (navigator.onLine)
+            setAuthError(
+              "Could not check your session. Sign in again to continue.",
+            );
+        }
+      })
+      .finally(() => clearTimeout(startupDeadline));
     const {
       data: { subscription },
     } = cloud.auth.onAuthStateChange((event, s) => {
       setTimeout(() => {
+        clearTimeout(startupDeadline);
         void (async () => {
           if (event === "SIGNED_OUT") {
             if (active) {
@@ -301,6 +328,7 @@ function App() {
     });
     return () => {
       active = false;
+      clearTimeout(startupDeadline);
       subscription.unsubscribe();
     };
   }, []);
@@ -653,11 +681,15 @@ function App() {
         />
       </div>
     );
-  if (!data) return <OpeningScreen waiting />;
-  if (!authReady) return <OpeningScreen waiting />;
+  if (!data || !authReady)
+    return (
+      <div className="startup-status" role="status">
+        <span className="startup-progress" aria-hidden="true" />
+        Opening your space…
+      </div>
+    );
   const onboardingScreen = (
     <>
-      {opening && <OpeningScreen onDone={() => setOpening(false)} />}
       <Onboarding
         data={data}
         preview={welcomePreview}
@@ -692,7 +724,6 @@ function App() {
   if (!user && !(offlineAccess && !online))
     return (
       <>
-        {opening && <OpeningScreen onDone={() => setOpening(false)} />}
         <SignInScreen
           busy={busy}
           attempt={attempt}
@@ -704,7 +735,6 @@ function App() {
   if (locked)
     return (
       <div className="county-unlock">
-        {opening && <OpeningScreen onDone={() => setOpening(false)} />}
         <span className="unlock-emblem">
           <BrandMark />
           <LockKeyhole size={17} />
@@ -926,7 +956,6 @@ function App() {
   }
   return (
     <>
-      {opening && <OpeningScreen onDone={() => setOpening(false)} />}
       <div
         className="app-shell"
         inert={!!modal || opening}
@@ -1516,6 +1545,7 @@ function App() {
           {(modal === "account" || modal.startsWith("account-edit:")) && (
             <AccountForm
               key={modal}
+              accounts={d.accounts}
               account={
                 modal.startsWith("account-edit:")
                   ? d.accounts.find((a) => a.id === modal.slice(13))
@@ -1573,11 +1603,12 @@ function App() {
                       )}
                     </span>
                     <button
-                      className="icon-button"
+                      className="secondary account-edit-action"
                       aria-label={"Edit " + a.name}
                       onClick={() => setModal("account-edit:" + a.id)}
                     >
                       <Settings size={18} />
+                      <span>Edit</span>
                     </button>
                   </div>
                 );
@@ -1606,7 +1637,7 @@ function App() {
               onReplay={(kind) => {
                 setModal(null);
                 if (kind === "welcome") setWelcomePreview(true);
-                else setOpening(true);
+                else onReplayIntro();
               }}
               onSignOut={async () => {
                 const result = await cloud!.auth.signOut();
@@ -2238,16 +2269,22 @@ function AccountForm({
   busy,
   onSave,
   account,
+  accounts,
 }: {
   busy: boolean;
   onSave: (a: Account) => void;
   account?: Account;
+  accounts: Account[];
 }) {
   const [type, setType] = useState<Account["type"]>(account?.type || "bank"),
-    [color, setColor] = useState(account ? accountColour(account) : "sand"),
+    [color, setColor] = useState(
+      account ? accountColour(account) : newAccountColour("bank", accounts),
+    ),
+    [colourChosen, setColourChosen] = useState(false),
     [error, setError] = useState("");
   return (
     <form
+      className="account-form"
       onSubmit={(e) => {
         e.preventDefault();
         try {
@@ -2281,7 +2318,11 @@ function AccountForm({
         <ChoiceField
           label="Account type"
           value={type}
-          onChange={(v) => setType(v as Account["type"])}
+          onChange={(v) => {
+            const next = v as Account["type"];
+            setType(next);
+            if (!colourChosen) setColor(newAccountColour(next, accounts));
+          }}
           options={[
             { value: "bank", label: "Bank account" },
             { value: "cash", label: "Cash" },
@@ -2300,7 +2341,13 @@ function AccountForm({
           defaultValue={account?.name}
         />
       </label>
-      <AccountColour value={color} onChange={setColor} />
+      <AccountColour
+        value={color}
+        onChange={(colour) => {
+          setColourChosen(true);
+          setColor(colour);
+        }}
+      />
       {!account && (
         <MoneyField
           name="balance"

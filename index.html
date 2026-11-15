@@ -28,20 +28,9 @@
         background: #d8d6c9;
         color: #e65416;
       }
-      .county-boot svg {
-        visibility: hidden;
-        width: 64px;
-        height: 64px;
-        margin-top: -4vh;
-      }
       [data-theme="dark"] .county-boot {
         background: #303236;
         color: #e65416;
-      }
-      @media (prefers-reduced-motion: reduce) {
-        .county-boot svg {
-          visibility: visible;
-        }
       }
     </style>
     <meta
@@ -67,23 +56,7 @@
   </head>
   <body>
     <div id="root">
-      <div class="county-boot" role="status" aria-label="Opening County">
-        <svg viewBox="0 0 256 256" fill="currentColor" aria-hidden="true">
-          <path d="M127 0 A128 128 0 0 0 0 127 A127 127 0 0 0 127 0Z" />
-          <path
-            d="M127 0 A128 128 0 0 0 0 127 A127 127 0 0 0 127 0Z"
-            transform="rotate(90 128 128)"
-          />
-          <path
-            d="M127 0 A128 128 0 0 0 0 127 A127 127 0 0 0 127 0Z"
-            transform="rotate(180 128 128)"
-          />
-          <path
-            d="M127 0 A128 128 0 0 0 0 127 A127 127 0 0 0 127 0Z"
-            transform="rotate(270 128 128)"
-          />
-        </svg>
-      </div>
+      <div class="county-boot" role="status" aria-label="Opening County"></div>
     </div>
     <script type="module" src="/src/main.tsx"></script>
   </body>

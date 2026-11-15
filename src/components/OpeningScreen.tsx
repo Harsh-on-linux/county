@@ -59,50 +59,44 @@ function buildOpening(
   timeline
     .call(() => {
       root.dataset.phase = "rise";
-    }, 80)
+    }, 0)
     .add(
       flight,
-      { y: 0, duration: 1040, ease: "cubicBezier(0.45, 0, 0.2, 1)" },
-      80,
+      { y: 0, duration: 700, ease: "cubicBezier(0.45, 0, 0.2, 1)" },
+      0,
     )
     .add(
       caption,
-      { opacity: [0, 1], y: [6, 0], duration: 360, ease: "inOut(3)" },
-      760,
+      { opacity: [0, 1], y: [6, 0], duration: 220, ease: "inOut(3)" },
+      480,
     )
     .call(() => {
       root.dataset.phase = "settle";
-    }, 1120)
+    }, 700)
     .call(() => {
       root.dataset.phase = "reveal";
       // Swap identical marks before zooming. SVG transforms keep the enlarged
       // artwork vector-sharp instead of magnifying a composited HTML texture.
       portalMark.style.visibility = "visible";
       flight.style.visibility = "hidden";
-    }, 1420)
-    .add(caption, { opacity: 0, duration: 200, ease: "inOut(2)" }, 1420)
-    .add(hole, { opacity: [0, 1], duration: 100, ease: "inOut(2)" }, 1420)
+    }, 820)
+    .add(caption, { opacity: 0, duration: 160, ease: "inOut(2)" }, 820)
+    .add(hole, { opacity: [0, 1], duration: 80, ease: "inOut(2)" }, 820)
     .add(
       portal,
       {
         scale: [1, coverScale],
-        duration: 1100,
+        duration: 600,
         ease: "cubicBezier(0.65, 0, 0.35, 1)",
         onRender: renderPortal,
       },
-      1520,
+      900,
     );
-  if (skip) timeline.add(skip, { opacity: 0, duration: 160 }, 1420);
+  if (skip) timeline.add(skip, { opacity: 0, duration: 120 }, 820);
   return timeline;
 }
 
-export function OpeningScreen({
-  onDone,
-  waiting = false,
-}: {
-  onDone?: () => void;
-  waiting?: boolean;
-}) {
+export function OpeningScreen({ onDone }: { onDone?: () => void }) {
   const root = useRef<HTMLDivElement>(null),
     done = useRef(onDone),
     timeline = useRef<Timeline | null>(null),
@@ -119,7 +113,6 @@ export function OpeningScreen({
       done.current?.();
     };
     finish.current = complete;
-    if (waiting) return;
     const motion = matchMedia("(prefers-reduced-motion: reduce)");
     const restart = () => {
       timeline.current?.revert();
@@ -133,19 +126,26 @@ export function OpeningScreen({
     };
     restart();
     motion.addEventListener("change", restart);
+    const hidden = () => {
+      if (document.hidden) complete();
+    };
+    window.addEventListener("resize", complete);
+    document.addEventListener("visibilitychange", hidden);
     return () => {
       completed = true;
       motion.removeEventListener("change", restart);
+      window.removeEventListener("resize", complete);
+      document.removeEventListener("visibilitychange", hidden);
       timeline.current?.revert();
       timeline.current = null;
     };
-  }, [waiting]);
+  }, []);
   useEffect(() => {
     const previous = document.activeElement as HTMLElement | null;
     const oldOverflow = document.body.style.overflow;
     document.body.style.overflow = "hidden";
     const key = (event: KeyboardEvent) => {
-      if (event.key === "Escape" && !waiting) {
+      if (event.key === "Escape") {
         event.preventDefault();
         event.stopPropagation();
         finish.current();
@@ -160,15 +160,13 @@ export function OpeningScreen({
       document.removeEventListener("keydown", key, true);
       if (previous?.isConnected) previous.focus({ preventScroll: true });
     };
-  }, [waiting]);
+  }, []);
   return (
     <div
-      className={
-        "county-opening opening-screen " + (waiting ? "opening-waiting" : "")
-      }
+      className="county-opening opening-screen"
       ref={root}
       data-motion="animejs"
-      data-phase={waiting ? "waiting" : "ready"}
+      data-phase="ready"
       role="status"
       aria-label="Opening County"
     >
@@ -224,15 +222,13 @@ export function OpeningScreen({
       <div className="intro-wordmark" aria-hidden="true">
         county<span>.</span>
       </div>
-      {!waiting && (
-        <button
-          type="button"
-          className="intro-skip"
-          onClick={() => finish.current()}
-        >
-          Skip intro <ArrowRight size={14} />
-        </button>
-      )}
+      <button
+        type="button"
+        className="intro-skip"
+        onClick={() => finish.current()}
+      >
+        Skip intro <ArrowRight size={14} />
+      </button>
     </div>
   );
 }

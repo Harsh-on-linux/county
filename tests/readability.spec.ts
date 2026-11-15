@@ -65,11 +65,20 @@ test("account colours can be changed without changing history, and new wallets k
   page,
 }) => {
   await seed(page);
+  await expect(page.locator(".account-card").first()).toHaveAttribute(
+    "data-account-colour",
+    "blue",
+  );
   await page.getByRole("button", { name: "Manage accounts" }).click();
   await page
     .getByRole("button", { name: "Edit Family savings account" })
     .click();
-  await page.getByRole("button", { name: "Blue", exact: true }).click();
+  const palette = page.getByRole("group", { name: "Account colour" });
+  await expect(palette.getByRole("button")).toHaveCount(9);
+  await expect(
+    palette.getByRole("button", { name: "Sand", exact: true }),
+  ).toHaveCount(0);
+  await page.getByRole("button", { name: "Coral", exact: true }).click();
   await page.getByRole("button", { name: "Save account", exact: true }).click();
   const toast = page.locator(".toast");
   await expect(toast).toBeVisible();
@@ -79,16 +88,19 @@ test("account colours can be changed without changing history, and new wallets k
   let data = await stored(page);
   expect(data.accounts[0]).toMatchObject({
     id: "bank",
-    color: "blue",
+    color: "coral",
     opening: 4850000,
   });
   expect(data.entries).toHaveLength(1);
   await page.getByRole("button", { name: "Close dialog" }).click();
   await expect(
-    page.locator(".account-card[data-account-colour=blue]"),
+    page.locator(".account-card[data-account-colour=coral]"),
   ).toContainText("47,650.00");
   await page.getByRole("button", { name: "Add account", exact: true }).click();
   await choose(page, "Account type", "Wallet");
+  await expect(
+    page.getByRole("button", { name: "Teal", exact: true }),
+  ).toHaveAttribute("aria-pressed", "true");
   await page
     .getByLabel("Account name", { exact: true })
     .fill("Everyday wallet");

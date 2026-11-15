@@ -1,16 +1,7 @@
 import { Check } from "lucide-react";
 import { BurstMark } from "./BurstMark";
-import type { Account } from "../domain";
-export const accountColour = (account: Account) =>
-  account.color || (account.type === "card" ? "peach" : "sand");
-export const accountColours = [
-  { id: "sage", label: "Sage" },
-  { id: "blue", label: "Blue" },
-  { id: "lilac", label: "Lilac" },
-  { id: "peach", label: "Peach" },
-  { id: "rose", label: "Rose" },
-  { id: "sand", label: "Sand" },
-] as const;
+import { accountColours } from "../accountColours";
+export { accountColour } from "../accountColours";
 export function AccountColour({
   value,
   onChange,

@@ -21,6 +21,7 @@ import { save, isAndroid } from "../storage";
 import { App as CapacitorApp } from "@capacitor/app";
 import "./onboarding.css";
 import { AccountColour } from "./AccountColour";
+import { defaultAccountColour } from "../accountColours";
 import { BurstMark } from "./BurstMark";
 import { PrismSurface } from "./PrismSurface";
 import { MoneyField } from "./MoneyField";
@@ -106,7 +107,8 @@ export function Onboarding({
     [name, setName] = useState(data.name),
     [type, setType] = useState<Account["type"]>("cash"),
     [accountName, setAccountName] = useState("Cash"),
-    [accountColor, setAccountColor] = useState("sand"),
+    [accountColor, setAccountColor] = useState(defaultAccountColour("cash")),
+    [colourChosen, setColourChosen] = useState(false),
     [opening, setOpening] = useState(""),
     [saving, setSaving] = useState(false),
     [error, setError] = useState(""),
@@ -413,6 +415,8 @@ export function Onboarding({
                           aria-pressed={type === value}
                           onClick={() => {
                             setType(value);
+                            if (!colourChosen)
+                              setAccountColor(defaultAccountColour(value));
                             setAccountName(
                               {
                                 cash: "Cash",
@@ -440,7 +444,10 @@ export function Onboarding({
                     </label>
                     <AccountColour
                       value={accountColor}
-                      onChange={setAccountColor}
+                      onChange={(colour) => {
+                        setColourChosen(true);
+                        setAccountColor(colour);
+                      }}
                     />
                     <MoneyField
                       label={

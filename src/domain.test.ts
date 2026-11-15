@@ -1,4 +1,5 @@
 import { describe, it, expect } from "vitest";
+import { accountColours } from "./accountColours";
 import {
   amountOf,
   balance,
@@ -149,6 +150,39 @@ describe("SMS suggestions", () => {
   });
 });
 describe("portable records", () => {
+  it("loads retired Sand accounts with type colours without changing money or history", () => {
+    const data = {
+      ...initial(),
+      accounts: [
+        { ...bank, color: "sand" },
+        { ...card, color: "sand" },
+      ],
+      entries: [entry()],
+    };
+    const restored = readBackup(JSON.stringify(data));
+    expect(restored.accounts.map((account) => account.color)).toEqual([
+      "blue",
+      "lilac",
+    ]);
+    expect(restored.accounts.map((account) => account.opening)).toEqual([
+      100000, -50000,
+    ]);
+    expect(restored.entries).toEqual(data.entries);
+  });
+  it("restores every selectable account colour and rejects unknown colours", () => {
+    for (const colour of accountColours) {
+      const data = { ...initial(), accounts: [{ ...bank, color: colour.id }] };
+      expect(readBackup(JSON.stringify(data))).toEqual(data);
+    }
+    expect(() =>
+      readBackup(
+        JSON.stringify({
+          ...initial(),
+          accounts: [{ ...bank, color: "unknown" }],
+        }),
+      ),
+    ).toThrow("Invalid account");
+  });
   it("round trips backups including recoverable deletions", () => {
     const d = {
       ...initial(),
