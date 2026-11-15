@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import {
   ArrowDownLeft,
   ArrowUpRight,
@@ -7,6 +7,7 @@ import {
   RefreshCw,
   Search,
   ShieldCheck,
+  SlidersHorizontal,
   Trash2,
   Undo2,
   X,
@@ -34,7 +35,7 @@ export function UnlabelledInbox({
   android: boolean;
   scanning: boolean;
   scanError: string;
-  onScan: (range: ScanRange) => void;
+  onScan: (range: ScanRange) => Promise<boolean>;
   onToggle: () => void;
   onPaste: (body: string, date: string) => Promise<void>;
   onReview: (suggestion: Suggestion) => void;
@@ -71,6 +72,8 @@ export function UnlabelledInbox({
   const discarded = data.suggestions.filter(
     (s) => suggestionStatus(s, data.entries) === "discarded",
   );
+  const [captureOpen, setCaptureOpen] = useState(pending.length === 0);
+  const results = useRef<HTMLDivElement>(null);
   const rows = (view === "unlabelled" ? pending : discarded)
     .filter((s) =>
       [
@@ -100,126 +103,168 @@ export function UnlabelledInbox({
   }
   return (
     <div className="review-inbox">
+      <div className="review-overview">
+        <div>
+          <span className="eyebrow">WAITING FOR YOUR SAY</span>
+          <strong>
+            {pending.length.toString().padStart(2, "0")}
+            <span>to review</span>
+          </strong>
+        </div>
+        <span className="review-device-note">
+          <ShieldCheck size={17} />
+          On this device
+        </span>
+      </div>
       <section className="capture-panel" aria-label="Message capture">
         <div className="capture-panel-heading">
           <span className="capture-symbol">
             <Inbox size={20} strokeWidth={1.5} />
           </span>
           <div>
-            <h2>Bank messages, organised.</h2>
-            <p>
-              Captured payments wait here. Your balance changes only after you
-              save them.
-            </p>
+            <h2>Capture payments</h2>
+            <p>Your balance changes only after you label and save.</p>
           </div>
-        </div>
-        <div className="scan-period">
-          <ChoiceField
-            label="Scan period"
-            value={period}
-            onChange={selectPeriod}
-            options={[
-              { value: "7", label: "Last 7 days" },
-              { value: "30", label: "Last 30 days" },
-              { value: "90", label: "Last 90 days" },
-              { value: "custom", label: "Custom dates" },
-            ]}
-          />
-          {period === "custom" && (
-            <div className="scan-dates">
-              <label>
-                From date
-                <input
-                  type="date"
-                  value={from}
-                  max={to || today()}
-                  onChange={(e) => setFrom(e.target.value)}
-                  disabled={scanning}
-                />
-              </label>
-              <label>
-                To date
-                <input
-                  type="date"
-                  value={to}
-                  min={from}
-                  max={today()}
-                  onChange={(e) => setTo(e.target.value)}
-                  disabled={scanning}
-                />
-              </label>
-            </div>
-          )}
-          <p>
-            Choose which messages to check. Automatic checks look for new
-            messages.
-          </p>
-        </div>
-        <div className="capture-controls">
-          {android ? (
-            <button
-              className="secondary"
-              disabled={scanning}
-              onClick={() => {
-                try {
-                  scanBounds({ from, to });
-                  setError("");
-                  onScan({ from, to });
-                } catch (e) {
-                  setError((e as Error).message);
-                }
-              }}
-            >
-              <RefreshCw
-                size={15}
-                className={scanning ? "capture-scanning" : ""}
-              />
-              {scanning
-                ? "Checking messages…"
-                : data.smsCapture
-                  ? "Check messages"
-                  : "Enable message capture"}
-            </button>
-          ) : (
-            <span className="caption">
-              Automatic message capture is available on Android.
-            </span>
-          )}
           <button
-            className="text-button"
-            onClick={() => setPaste(!paste)}
-            aria-expanded={paste}
+            className="capture-options-button"
+            type="button"
+            aria-expanded={captureOpen}
+            aria-controls="capture-options"
+            onClick={() => setCaptureOpen(!captureOpen)}
           >
-            {paste ? <X size={14} /> : <PlusMark />}
-            {paste ? "Close" : "Paste a bank message"}
+            <SlidersHorizontal size={18} />
+            <span>{captureOpen ? "Hide options" : "Scan options"}</span>
           </button>
         </div>
-        {android && data.smsCapture && (
-          <label className="capture-auto">
-            <input
-              type="checkbox"
-              checked={!!data.smsCapture}
-              onChange={onToggle}
+        <div id="capture-options" hidden={!captureOpen}>
+          <div className="scan-period">
+            <ChoiceField
+              label="Scan period"
+              value={period}
+              onChange={selectPeriod}
+              options={[
+                { value: "7", label: "Last 7 days" },
+                { value: "30", label: "Last 30 days" },
+                { value: "90", label: "Last 90 days" },
+                { value: "custom", label: "Custom dates" },
+              ]}
             />
-            <span>Check automatically while County is open</span>
-          </label>
-        )}
-        {data.lastSmsScan && (
-          <p className="capture-last">
-            Last checked{" "}
-            {new Date(data.lastSmsScan).toLocaleString("en-IN", {
-              day: "numeric",
-              month: "short",
-              hour: "2-digit",
-              minute: "2-digit",
-            })}
-          </p>
-        )}
+            {period === "custom" && (
+              <div className="scan-dates">
+                <label>
+                  From date
+                  <input
+                    type="date"
+                    value={from}
+                    max={to || today()}
+                    onChange={(e) => setFrom(e.target.value)}
+                    disabled={scanning}
+                  />
+                </label>
+                <label>
+                  To date
+                  <input
+                    type="date"
+                    value={to}
+                    min={from}
+                    max={today()}
+                    onChange={(e) => setTo(e.target.value)}
+                    disabled={scanning}
+                  />
+                </label>
+              </div>
+            )}
+            <p>
+              Choose which messages to check. Automatic checks look for new
+              messages.
+            </p>
+          </div>
+          <div className="capture-controls">
+            {android ? (
+              <button
+                className="secondary"
+                disabled={scanning}
+                onClick={async () => {
+                  try {
+                    scanBounds({ from, to });
+                    setError("");
+                    if (await onScan({ from, to })) {
+                      setCaptureOpen(false);
+                      requestAnimationFrame(() => {
+                        results.current
+                          ?.querySelector<HTMLButtonElement>("button")
+                          ?.focus({ preventScroll: true });
+                        results.current?.scrollIntoView({
+                          behavior: matchMedia(
+                            "(prefers-reduced-motion: reduce)",
+                          ).matches
+                            ? "auto"
+                            : "smooth",
+                          block: "start",
+                        });
+                      });
+                    }
+                  } catch (e) {
+                    setError((e as Error).message);
+                  }
+                }}
+              >
+                <RefreshCw
+                  size={15}
+                  className={scanning ? "capture-scanning" : ""}
+                />
+                {scanning
+                  ? "Checking messages…"
+                  : data.smsCapture
+                    ? "Check messages"
+                    : "Enable message capture"}
+              </button>
+            ) : (
+              <span className="caption">
+                Automatic message capture is available on Android.
+              </span>
+            )}
+          </div>
+          {android && data.smsCapture && (
+            <label className="capture-auto">
+              <input
+                type="checkbox"
+                checked={!!data.smsCapture}
+                onChange={onToggle}
+              />
+              <span>Check automatically while County is open</span>
+            </label>
+          )}
+          {data.lastSmsScan && (
+            <p className="capture-last">
+              Last checked{" "}
+              {new Date(data.lastSmsScan).toLocaleString("en-IN", {
+                day: "numeric",
+                month: "short",
+                hour: "2-digit",
+                minute: "2-digit",
+              })}
+            </p>
+          )}
+        </div>
         {scanError && (
           <p className="error" role="alert">
             {scanError}
           </p>
         )}
+        <div className="capture-quick-actions">
+          <button
+            className="text-button"
+            onClick={() => setPaste(!paste)}
+            aria-expanded={paste}
+          >
+            {paste ? <X size={16} /> : <PlusMark />}
+            {paste ? "Close" : "Paste a bank message"}
+          </button>
+          <span className="capture-local-caption">
+            Kept private, until you choose
+          </span>
+        </div>
         {paste && (
           <form
             className="paste-message"
@@ -274,7 +319,7 @@ export function UnlabelledInbox({
           </button>
         </div>
       )}
-      <div className="review-toolbar">
+      <div className="review-toolbar" ref={results}>
         <div className="review-tabs" aria-label="Captured transaction status">
           {[
             ["unlabelled", "Unlabelled", pending.length],

@@ -153,6 +153,9 @@ test("manual Android scans pass inclusive date bounds and leave other messages a
   await page.getByLabel("To date", { exact: true }).fill("2024-01-02");
   await page.getByRole("button", { name: "Enable message capture" }).click();
   await expect(page.locator(".review-row")).toHaveCount(2);
+  await expect(
+    page.getByRole("button", { name: "Scan options", exact: true }),
+  ).toHaveAttribute("aria-expanded", "false");
   const call = await page.evaluate(() =>
     (window as any).scanCalls.find((c: any) => c.requestPermission),
   );
@@ -167,6 +170,7 @@ test("manual Android scans pass inclusive date bounds and leave other messages a
   expect(data.seenSms).not.toContain("after");
   expect(data.suggestions.map((s: any) => s.id)).toEqual(["first", "last"]);
   expect(data.smsScanRange).toEqual({ from: "2024-01-01", to: "2024-01-02" });
+  await page.getByRole("button", { name: "Scan options", exact: true }).click();
   await page.screenshot({
     path: "test-results/scan-dates-light.png",
     fullPage: true,

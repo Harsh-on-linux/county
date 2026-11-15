@@ -113,11 +113,15 @@ export function FamilySettings({
             {members.map((m) => (
               <div className="payer-row" key={m.user_id}>
                 <span className="avatar">{m.name.slice(0, 1)}</span>
-                <strong>
-                  {m.name}
-                  {m.user_id === user ? " · You" : ""}
-                </strong>
-                <small>{m.user_id === group.owner ? "Owner" : "Member"}</small>
+                <div className="family-member-info">
+                  <strong>
+                    {m.name}
+                    {m.user_id === user ? " · You" : ""}
+                  </strong>
+                  <small>
+                    {m.user_id === group.owner ? "Owner" : "Member"}
+                  </small>
+                </div>
                 {group.owner === user && m.user_id !== user && (
                   <button
                     className="icon-button"
@@ -125,6 +129,7 @@ export function FamilySettings({
                     disabled={busy}
                     onClick={() => setRemoving(m)}
                   >
+                    <span className="member-remove-label">Remove</span>
                     <X size={15} />
                   </button>
                 )}
@@ -185,7 +190,9 @@ export function FamilySettings({
                 <div className="family-invite">
                   <label>
                     Single-use invitation · expires in 24 hours
-                    <input
+                    <textarea
+                      rows={2}
+                      spellCheck={false}
                       aria-label="Family invitation code"
                       readOnly
                       value={invite}

@@ -35,7 +35,7 @@ import {
   Car,
   Heart,
   Zap,
-  MoreHorizontal,
+  ReceiptText,
   LockKeyhole,
   Inbox,
   LogOut,
@@ -108,6 +108,11 @@ import "./auth.css";
 import "./readability.css";
 import "./theme.css";
 import "./motion.css";
+import "./views.css";
+import { LedgerView } from "./components/LedgerView";
+import { HouseholdView } from "./components/HouseholdView";
+import { InsightsView } from "./components/InsightsView";
+import { SettingsView } from "./components/SettingsView";
 
 if (import.meta.env.PROD && "serviceWorker" in navigator && !isAndroid) {
   void navigator.serviceWorker.register("/sw.js").catch(console.error);
@@ -121,6 +126,8 @@ const icons: Record<string, typeof Home> = {
   Health: Heart,
   "Bills & utilities": Zap,
   Family: Users,
+  Home,
+  Rent: Home,
 };
 const accountIcon = {
   bank: Landmark,
@@ -383,7 +390,7 @@ function App() {
     }
   }
   async function scanMessages(requestPermission = true, range?: ScanRange) {
-    if (!isAndroid || scanRunning.current || !current.current) return;
+    if (!isAndroid || scanRunning.current || !current.current) return false;
     scanRunning.current = true;
     setScanning(true);
     setScanError("");
@@ -424,8 +431,10 @@ function App() {
             ? `${added} payment${added === 1 ? "" : "s"} ready to label.`
             : "No new payments found.",
         );
+      return true;
     } catch (e) {
       setScanError((e as Error).message);
+      return false;
     } finally {
       scanRunning.current = false;
       setScanning(false);
@@ -806,7 +815,7 @@ function App() {
         ? ArrowLeftRight
         : e.type === "income"
           ? ArrowDownLeft
-          : icons[e.category] || MoreHorizontal;
+          : icons[e.category] || ReceiptText;
     return (
       <button
         className="transaction"
@@ -885,7 +894,7 @@ function App() {
     return rows.length ? (
       <div className="category-list">
         {rows.map(([name, amount], i) => {
-          const Icon = icons[name] || MoreHorizontal;
+          const Icon = icons[name] || ReceiptText;
           return (
             <div className="category-row" key={name}>
               <div className="category-label">
@@ -1243,7 +1252,7 @@ function App() {
                 android={isAndroid}
                 scanning={scanning}
                 scanError={scanError}
-                onScan={(range) => void scanMessages(true, range)}
+                onScan={(range) => scanMessages(true, range)}
                 onToggle={() =>
                   void change((live) => ({
                     ...live,
@@ -1293,230 +1302,47 @@ function App() {
               />
             )}
             {tab === "Activity" && (
-              <>
-                {dayFilter && (
-                  <button
-                    className="day-filter-pill"
-                    onClick={() => setDayFilter("")}
-                  >
-                    {new Date(dayFilter + "T12:00:00").toLocaleDateString(
-                      "en-IN",
-                      { day: "numeric", month: "long" },
-                    )}{" "}
-                    <X size={14} /> Clear day
-                  </button>
-                )}
-                <div className="activity-tools">
-                  <label className="search">
-                    <Search size={18} />
-                    <input
-                      aria-label="Search transactions"
-                      placeholder="Search transactions…"
-                      value={query}
-                      onChange={(e) => setQuery(e.target.value)}
-                    />
-                  </label>
-                  {monthPicker}
-                  <button
-                    className="secondary"
-                    onClick={() => setTab("Unlabelled")}
-                  >
-                    <Inbox size={17} /> Unlabelled{" "}
-                    {pending.length > 0 && (
-                      <span className="badge">{pending.length}</span>
-                    )}
-                  </button>
-                </div>
-                <div className="filters">
-                  <SlidersHorizontal size={16} />
-                  <ChoiceField
-                    label="Category filter"
-                    value={category}
-                    onChange={setCategory}
-                    options={[
-                      { value: "All", label: "All categories" },
-                      ...d.categories.map((c) => ({ value: c, label: c })),
-                    ]}
-                  />
-                  <ChoiceField
-                    label="Account filter"
-                    value={account}
-                    onChange={setAccount}
-                    options={[
-                      { value: "All", label: "All accounts" },
-                      ...d.accounts.map((a) => ({
-                        value: a.id,
-                        label: a.name,
-                      })),
-                    ]}
-                  />
-                  <ChoiceField
-                    label="Transaction type filter"
-                    value={kind}
-                    onChange={setKind}
-                    options={[
-                      { value: "All", label: "All types" },
-                      ...["expense", "income", "transfer", "adjustment"].map(
-                        (t) => ({
-                          value: t,
-                          label: t[0].toUpperCase() + t.slice(1),
-                        }),
-                      ),
-                    ]}
-                  />{" "}
-                  <button
-                    className={"chip " + (includeDeleted ? "selected" : "")}
-                    onClick={() => setIncludeDeleted(!includeDeleted)}
-                  >
-                    <Trash2 size={13} /> Recently deleted
-                  </button>
-                </div>
-                <section className="card activity-card">
-                  <div className="section-top">
-                    <h2>
-                      {includeDeleted ? "Deleted records" : "Transactions"}{" "}
-                      <span className="count">{filtered.length}</span>
-                    </h2>
-                    <button
-                      className="text-button"
-                      onClick={() =>
-                        void attempt(async () => {
-                          await download(
-                            "county-transactions.csv",
-                            csv(filtered, d.accounts),
-                            "text/csv",
-                          );
-                        })
-                      }
-                    >
-                      <Download size={15} /> Export
-                    </button>
-                  </div>
-                  {filtered.map((e) => transaction(e))}
-                  {!filtered.length && (
-                    <Empty
-                      icon={Search}
-                      title="Nothing here yet"
-                      text="Try another month or filter, or add a new transaction."
-                    />
-                  )}
-                </section>
-              </>
+              <LedgerView
+                data={d}
+                entries={filtered}
+                monthPicker={monthPicker}
+                query={query}
+                onQuery={setQuery}
+                filters={{ category, account, kind, deleted: includeDeleted }}
+                onFilters={(patch) => {
+                  if (patch.category !== undefined) setCategory(patch.category);
+                  if (patch.account !== undefined) setAccount(patch.account);
+                  if (patch.kind !== undefined) setKind(patch.kind);
+                  if (patch.deleted !== undefined)
+                    setIncludeDeleted(patch.deleted);
+                }}
+                day={dayFilter}
+                onClearDay={() => setDayFilter("")}
+                pending={pending.length}
+                onInbox={() => setTab("Unlabelled")}
+                onExport={() =>
+                  void attempt(async () => {
+                    await download(
+                      "county-transactions.csv",
+                      csv(filtered, d.accounts),
+                      "text/csv",
+                    );
+                  })
+                }
+                renderEntry={transaction}
+              />
             )}
             {tab === "Household" && (
-              <>
-                <div className="household-hero">
-                  <div>
-                    <span className="eyebrow">
-                      {group ? "YOUR SHARED SPACE" : "A SPACE FOR YOUR PEOPLE"}
-                    </span>
-                    <h2>{group?.name || "Home is a team effort."}</h2>
-                    <p>
-                      {group
-                        ? "The everyday things you take care of together."
-                        : "Keep shared expenses together, and personal balances private."}
-                    </p>
-                    <div className="member-stack">
-                      {(members.length
-                        ? members
-                        : [{ user_id: "local", name: d.name || "You" }]
-                      ).map((m, i) => (
-                        <span
-                          title={m.name}
-                          className={"avatar member-" + (i % 3)}
-                          key={m.user_id}
-                        >
-                          {m.name.slice(0, 1)}
-                        </span>
-                      ))}
-                      <span className="subtle">
-                        {group
-                          ? `${members.length} members`
-                          : "Not connected yet"}
-                      </span>
-                    </div>
-                  </div>
-                  <div className="household-art">
-                    <Users size={68} strokeWidth={1} />
-                    <span className="art-star">✳</span>
-                  </div>
-                </div>
-                <div className="section-top household-actions">
-                  {monthPicker}
-                  <button
-                    className="secondary"
-                    onClick={() => setModal("family")}
-                  >
-                    <Users size={17} />
-                    {group ? "Manage household" : "Connect your family"}
-                  </button>
-                </div>
-                {!group && (
-                  <div className="info-box">
-                    <ShieldCheck size={18} />
-                    <span>
-                      Shared entries below are saved on this phone only. Connect
-                      your household to share across phones.
-                    </span>
-                  </div>
-                )}
-                <div className="household-stats">
-                  <div className="card">
-                    <small>Household spending</small>
-                    <strong>{money(ht.expense)}</strong>
-                    <span>{monthLabel(month)}</span>
-                  </div>
-                  <div className="card">
-                    <small>Shared expenses</small>
-                    <strong>{hm.length.toString().padStart(2, "0")}</strong>
-                    <span>No debts. Just a clearer picture.</span>
-                  </div>
-                </div>
-                <div className="dashboard-grid lower-grid">
-                  <section className="card">
-                    <div className="section-top">
-                      <h2>Shared activity</h2>
-                      <span className="badge">Household only</span>
-                    </div>
-                    {[...hm]
-                      .sort((a, b) => b.date.localeCompare(a.date))
-                      .map((e) =>
-                        transaction(e, (e as Entry & { payer: string }).payer),
-                      )}
-                    {!hm.length && (
-                      <Empty
-                        icon={Users}
-                        title="The everyday, together"
-                        text="Mark an expense as household to include it here."
-                        action="Add an expense"
-                        onClick={add}
-                      />
-                    )}
-                  </section>
-                  <section className="card">
-                    <div className="section-top">
-                      <h2>Who paid</h2>
-                    </div>
-                    {Object.entries(
-                      hm.reduce<Record<string, number>>((r, e) => {
-                        const p = (e as Entry & { payer: string }).payer;
-                        r[p] = (r[p] || 0) + e.amount;
-                        return r;
-                      }, {}),
-                    ).map(([name, value]) => (
-                      <div className="payer-row" key={name}>
-                        <span className="avatar">{name[0]}</span>
-                        <strong>{name}</strong>
-                        <span>{money(value)}</span>
-                      </div>
-                    ))}
-                    <p className="caption">
-                      These are contributions to household spending, not amounts
-                      owed between members.
-                    </p>
-                  </section>
-                </div>
-              </>
+              <HouseholdView
+                group={group}
+                members={members}
+                name={d.name}
+                entries={hm}
+                monthPicker={monthPicker}
+                renderEntry={transaction}
+                onManage={() => setModal("family")}
+                onAdd={add}
+              />
             )}
             {tab === "Insights" && (
               <>
@@ -1534,29 +1360,32 @@ function App() {
                   </div>
                   {monthPicker}
                 </div>
-                <MonthPulse
-                  entries={insightScope === "personal" ? monthly : hm}
-                  month={month}
-                  onSelectDay={(day) => {
-                    if (insightScope === "personal") {
-                      openLedger(day);
-                    } else
-                      toast(
-                        "Household spending for " +
-                          day +
-                          ": " +
-                          money(
-                            totals(hm.filter((e) => e.date === day)).expense,
-                          ),
-                      );
-                  }}
-                />
-                <Insights
+                <InsightsView
+                  key={month + insightScope}
                   entries={
                     insightScope === "personal" ? d.entries : householdView
                   }
                   month={month}
                   categoryChart={categoryChart}
+                  calendar={
+                    <MonthPulse
+                      entries={insightScope === "personal" ? monthly : hm}
+                      month={month}
+                      onSelectDay={(day) => {
+                        if (insightScope === "personal") openLedger(day);
+                        else
+                          toast(
+                            "Household spending for " +
+                              day +
+                              ": " +
+                              money(
+                                totals(hm.filter((e) => e.date === day))
+                                  .expense,
+                              ),
+                          );
+                      }}
+                    />
+                  }
                 />
               </>
             )}
@@ -1765,266 +1594,57 @@ function App() {
             </>
           )}
           {modal === "settings" && (
-            <>
-              <div className="settings-section">
-                <button
-                  className="setting-row"
-                  onClick={() => {
-                    setModal(null);
-                    setWelcomePreview(true);
-                  }}
-                >
-                  <BrandMark className="tour-replay-mark" />
-                  <div>
-                    <strong>Replay welcome tour</strong>
-                    <small>
-                      Explore the introduction without changing your records
-                    </small>
-                  </div>
-                  <ChevronRight size={16} />
-                </button>
-                <button
-                  className="setting-row"
-                  onClick={() => {
-                    setModal(null);
-                    setOpening(true);
-                  }}
-                >
-                  <RefreshCw size={20} />
-                  <div>
-                    <strong>Replay coin intro</strong>
-                    <small>Toss, settle, and step into County</small>
-                  </div>
-                  <ChevronRight size={16} />
-                </button>
-                <h3 style={{ marginTop: 24 }}>Appearance</h3>
-                <div className="theme-options">
-                  {(
-                    [
-                      { v: "system", label: "System", icon: Monitor },
-                      { v: "light", label: "Light", icon: Sun },
-                      { v: "dark", label: "Dark", icon: Moon },
-                    ] as const
-                  ).map(({ v, label, icon: Icon }) => (
-                    <button
-                      key={v}
-                      className={
-                        "theme-option " + (d.theme === v ? "selected" : "")
-                      }
-                      onClick={() => void change((d) => ({ ...d, theme: v }))}
-                    >
-                      <Icon size={22} />
-                      {label}
-                      {d.theme === v && <Check size={13} />}
-                    </button>
-                  ))}
-                </div>
-              </div>
-              <div className="settings-section">
-                <h3>Personal space</h3>
-                <label>
-                  Your name
-                  <input
-                    value={d.name}
-                    maxLength={40}
-                    onChange={(e) =>
-                      void change((d) => ({ ...d, name: e.target.value }))
-                    }
-                  />
-                </label>
-                <form
-                  className="inline-form"
-                  onSubmit={(e) => {
-                    e.preventDefault();
-                    const form = e.currentTarget;
-                    const name = String(
-                      new FormData(form).get("category"),
-                    ).trim();
-                    if (name && !d.categories.includes(name))
-                      void change((d) => ({
-                        ...d,
-                        categories: [...d.categories, name],
-                      }));
-                    form.reset();
-                  }}
-                >
-                  <label>
-                    New category
-                    <input
-                      name="category"
-                      placeholder="e.g. Pets"
-                      required
-                      maxLength={40}
-                    />
-                  </label>
-                  <button className="secondary" aria-label="Add category">
-                    <Plus size={18} />
-                  </button>
-                </form>
-                <button
-                  className="setting-row"
-                  disabled={!isAndroid || busy}
-                  onClick={() =>
-                    void attempt(async () => {
-                      await Native.authenticate();
-                      await commit((live) => ({ ...live, lock: !live.lock }));
-                    })
-                  }
-                >
-                  <LockKeyhole size={19} />
-                  <div>
-                    <strong>Device app lock</strong>
-                    <small>
-                      {isAndroid
-                        ? "Use your phone’s secure screen lock"
-                        : "Available in the Android app"}
-                    </small>
-                  </div>
-                  <span className={"toggle " + (d.lock ? "on" : "")} />
-                </button>
-              </div>
-              <div className="settings-section">
-                <h3>Backup & export</h3>
-                {!!d.sharedEdits?.length && (
-                  <button
-                    className="setting-row"
-                    onClick={() => {
-                      if (
-                        confirm(
-                          "Discard queued edits to other members’ household entries? Your personal transactions will be kept.",
-                        )
-                      )
-                        void attempt(async () => {
-                          await commit((live) => ({
-                            ...live,
-                            sharedEdits: [],
-                          }));
-                          unresolved.current = null;
-                          setConflict(null);
-                          toast("Queued household edits discarded.");
-                        });
-                    }}
-                  >
-                    <Trash2 size={18} />
-                    <div>
-                      <strong>
-                        {d.sharedEdits.length} pending household edit(s)
-                      </strong>
-                      <small>
-                        Discard if you no longer have access to that household
-                      </small>
-                    </div>
-                  </button>
-                )}
-                <p className="caption">
-                  Backups contain financial records in plain text. Store them
-                  somewhere private. Cloud backup is separate from household
-                  sharing.
-                </p>
-                <button
-                  className="setting-row"
-                  onClick={() =>
-                    void attempt(async () => {
-                      const next = {
-                        ...d,
-                        lastBackup: new Date().toISOString(),
-                      };
-                      await download(
-                        "county-backup-" + today() + ".json",
-                        JSON.stringify(next, null, 2),
-                        "application/json",
-                      );
-                      await commit(next);
-                      toast("Backup prepared. Keep the exported file safe.");
-                    })
-                  }
-                >
-                  <Download size={19} />
-                  <div>
-                    <strong>Save a full backup</strong>
-                    <small>
-                      {d.lastBackup
-                        ? "Last prepared " +
-                          new Date(d.lastBackup).toLocaleDateString("en-IN")
-                        : "Accounts, transactions, categories & preferences"}
-                    </small>
-                  </div>
-                  <ChevronRight size={16} />
-                </button>
-                <label className="setting-row file-label">
-                  <Upload size={19} />
-                  <div>
-                    <strong>Restore a backup</strong>
-                    <small>
-                      Replaces this device’s records after confirmation
-                    </small>
-                  </div>
-                  <input
-                    type="file"
-                    accept=".json"
-                    onChange={(e) => {
-                      const file = e.target.files?.[0];
-                      if (file)
-                        void attempt(async () => {
-                          const next = readBackup(await file.text());
-                          if (
-                            confirm(
-                              "Replace records on this phone with this backup? Export your current records first if needed.",
-                            )
-                          ) {
-                            await commit({
-                              ...next,
-                              lock: d.lock,
-                            });
-                            setModal(null);
-                            toast("Backup restored.");
-                          }
-                        });
-                      e.target.value = "";
-                    }}
-                  />
-                </label>
-                <button
-                  className="setting-row"
-                  onClick={() =>
-                    void attempt(async () => {
-                      await download(
-                        "county-transactions.csv",
-                        csv(d.entries, d.accounts),
-                        "text/csv",
-                      );
-                    })
-                  }
-                >
-                  <ListFilter size={19} />
-                  <div>
-                    <strong>Export transactions</strong>
-                    <small>CSV for spreadsheets</small>
-                  </div>
-                  <ChevronRight size={16} />
-                </button>
-              </div>
-              <CloudSettings
-                user={user}
-                group={group}
-                data={d}
-                busy={busy}
-                attempt={attempt}
-                toast={toast}
-                onSync={sync}
-                onRestore={async (snapshot, revision) => {
-                  await commit(snapshot);
+            <SettingsView
+              data={d}
+              busy={busy}
+              online={online}
+              signedIn={!!user}
+              onChange={commit}
+              attempt={attempt}
+              onFamily={() => setModal("family")}
+              onReplay={(kind) => {
+                setModal(null);
+                if (kind === "welcome") setWelcomePreview(true);
+                else setOpening(true);
+              }}
+              onSignOut={async () => {
+                const result = await cloud!.auth.signOut();
+                if (result.error) throw result.error;
+                toast("Signed out. Local records remain on this phone.");
+              }}
+              onDiscardEdits={async () => {
+                await commit((live) => ({ ...live, sharedEdits: [] }));
+                unresolved.current = null;
+                setConflict(null);
+              }}
+              onRestore={async (snapshot, revision) => {
+                const next = {
+                  ...snapshot,
+                  lock: current.current?.lock ?? d.lock,
+                };
+                await commit(next);
+                if (revision !== undefined) {
                   backupRevision.current = revision;
-                  lastSynced.current = JSON.stringify(snapshot);
-                }}
-                lastSync={lastSync}
-              />
-              <p className="caption centered">
-                County · Family pilot 0.1.0
-                <br />
-                Your money. A little clearer.
-              </p>
-            </>
+                  lastSynced.current = JSON.stringify(next);
+                }
+                setModal(null);
+                toast("Backup restored.");
+              }}
+              cloudBackup={(request) => (
+                <CloudSettings
+                  user={user}
+                  data={d}
+                  busy={busy}
+                  online={online}
+                  attempt={attempt}
+                  onSync={sync}
+                  onRestore={async (snapshot, revision) => {
+                    request(snapshot, revision);
+                  }}
+                  lastSync={lastSync}
+                />
+              )}
+            />
           )}
           {modal === "conflict" && conflict && (
             <>
@@ -2142,15 +1762,17 @@ function App() {
             </>
           )}
           {modal === "family" && (
-            <FamilySettings
-              user={user}
-              group={group}
-              members={members}
-              name={d.name}
-              busy={busy}
-              attempt={attempt}
-              refresh={sync}
-            />
+            <div className="family-settings">
+              <FamilySettings
+                user={user}
+                group={group}
+                members={members}
+                name={d.name}
+                busy={busy}
+                attempt={attempt}
+                refresh={sync}
+              />
+            </div>
           )}
         </Dialog>
       )}
@@ -2702,126 +2324,34 @@ function AccountForm({
     </form>
   );
 }
-function Insights({
-  entries,
-  month,
-  categoryChart,
-}: {
-  entries: Entry[];
-  month: string;
-  categoryChart: (e: Entry[]) => React.ReactNode;
-}) {
-  const m = monthEntries(entries, month),
-    total = totals(m),
-    days = new Date(
-      Number(month.slice(0, 4)),
-      Number(month.slice(5)),
-      0,
-    ).getDate(),
-    avg = total.expense / days,
-    largest = m
-      .filter((e) => e.type === "expense")
-      .sort((a, b) => b.amount - a.amount)[0];
-  const weeks = Array.from({ length: 5 }, (_, i) =>
-      m.filter((e) => Math.floor((Number(e.date.slice(-2)) - 1) / 7) === i),
-    ),
-    max = Math.max(...weeks.map((w) => totals(w).expense), 1);
-  return (
-    <>
-      <div className="insight-stats">
-        <div className="card">
-          <small>Total spent</small>
-          <strong>{money(total.expense)}</strong>
-          <span>
-            {m.filter((e) => e.type === "expense").length} expenses this month
-          </span>
-        </div>
-        <div className="card">
-          <small>Daily average</small>
-          <strong>{money(avg)}</strong>
-          <span>Across {days} calendar days</span>
-        </div>
-        <div className="card">
-          <small>Largest expense</small>
-          <strong>{money(largest?.amount || 0)}</strong>
-          <span>
-            {largest?.payee || largest?.category || "No expenses yet"}
-          </span>
-        </div>
-      </div>
-      <div className="dashboard-grid lower-grid">
-        <section className="card">
-          <div className="section-top">
-            <h2>The month in moments</h2>
-            <span className="badge">Weekly spend</span>
-          </div>
-          <div className="bar-chart">
-            {weeks.map((w, i) => (
-              <div className="bar-column" key={i}>
-                <span>{money(totals(w).expense)}</span>
-                <div className="bar-space">
-                  <div
-                    className="bar"
-                    style={{
-                      height: `${Math.max((totals(w).expense / max) * 100, 2)}%`,
-                    }}
-                  />
-                </div>
-                <small>
-                  {i * 7 + 1}–{Math.min((i + 1) * 7, days)}
-                </small>
-              </div>
-            ))}
-          </div>
-        </section>
-        <section className="card">
-          <div className="section-top">
-            <h2>Spending by category</h2>
-          </div>
-          {categoryChart(m)}
-        </section>
-      </div>
-      <div className="info-box">
-        <Heart size={18} />
-        <span>
-          These numbers are here to help you understand your habits. Every month
-          tells a different story.
-        </span>
-      </div>
-    </>
-  );
-}
 function CloudSettings({
   user,
-  group,
   data,
   busy,
+  online,
   attempt,
-  toast,
   onSync,
   onRestore,
   lastSync,
 }: {
   user: string | null;
-  group: Household | null;
   data: Data;
   busy: boolean;
+  online: boolean;
   attempt: (fn: () => Promise<void>) => Promise<void>;
-  toast: (s: string) => void;
   onSync: () => Promise<void>;
   onRestore: (d: Data, r: number) => Promise<void>;
   lastSync: string;
 }) {
   return (
     <div className="settings-section">
-      <h3>Family sync & cloud backup</h3>
+      <h3>Private cloud backup</h3>
       {!cloud ? (
         <div className="info-box">
           <WifiOff size={20} />
           <span>
-            This build saves on this device. Add a Supabase project
-            configuration to enable sign-in, family sharing, and automatic cloud
-            backup.
+            Cloud backup is unavailable in this build. Your records remain saved
+            on this device.
           </span>
         </div>
       ) : !user ? (
@@ -2835,12 +2365,14 @@ function CloudSettings({
       ) : (
         <>
           <p className="caption">
-            Connected · {group?.name || "No household yet"}
+            {online
+              ? "Connected to your account"
+              : "Offline · connect to use cloud backups"}
             {lastSync ? " · Last synced " + lastSync : ""}
           </p>
           <button
             className="setting-row"
-            disabled={busy}
+            disabled={busy || !online}
             onClick={() => void attempt(onSync)}
           >
             <RefreshCw size={18} />
@@ -2851,7 +2383,7 @@ function CloudSettings({
           </button>
           <button
             className="setting-row"
-            disabled={busy}
+            disabled={busy || !online}
             onClick={() =>
               void attempt(async () => {
                 const remote = await rpc<{
@@ -2860,32 +2392,15 @@ function CloudSettings({
                 } | null>("get_backup");
                 if (!remote) throw new Error("No cloud backup exists yet.");
                 const validated = readBackup(JSON.stringify(remote.payload));
-                if (
-                  confirm(
-                    "Replace local records with your cloud backup? Export this phone’s records first if needed.",
-                  )
-                )
-                  await onRestore(validated, remote.revision);
+                await onRestore(validated, remote.revision);
               })
             }
           >
             <Download size={18} />
             <div>
               <strong>Restore cloud backup</strong>
-              <small>Also resolves a backup version conflict</small>
+              <small>Review a saved copy before restoring</small>
             </div>
-          </button>
-          <button
-            className="setting-row"
-            onClick={() =>
-              void attempt(async () => {
-                await cloud!.auth.signOut();
-                toast("Signed out. Local records remain on this phone.");
-              })
-            }
-          >
-            <LogOut size={18} />
-            <strong>Sign out</strong>
           </button>
         </>
       )}

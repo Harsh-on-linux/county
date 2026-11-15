@@ -1,12 +1,18 @@
 /* A concentrated orange-to-paper light bloom. The reading area stays dark. */
 .balance-flow {
-  --flow-base: #111214;
-  --flow-ember: #f05216;
-  --flow-paper: #fff0df;
-  --flow-crest: #ffe6d142;
-  --flow-fold: #7c160c55;
-  --flow-glow: #ffd0ae80;
-  --flow-veil: #101113;
+  --flow-base: #f2e2cd;
+  --flow-ember: #e78e53;
+  --flow-paper: #fffaf2;
+  --flow-crest: #fffdf7b3;
+  --flow-fold: #da92582e;
+  --flow-glow: #fff7e5bd;
+  --flow-veil: #f5e8d6;
+  --flow-veil-mid: #fff5e8b3;
+  --flow-transition: #ffdeb9;
+  --flow-shadow-stop: #edb286;
+  --flow-start: #f6eadb;
+  --flow-mid: #f5cda7;
+  --flow-end: #e99355;
   position: absolute;
   inset: 0;
   z-index: 0;
@@ -23,6 +29,13 @@
   --flow-crest: #ffe6d133;
   --flow-fold: #6c140b55;
   --flow-glow: #ffbd9180;
+  --flow-veil: #101113;
+  --flow-veil-mid: #101113b3;
+  --flow-transition: #ffb38a;
+  --flow-shadow-stop: #7d1008;
+  --flow-start: #111214;
+  --flow-mid: #201213;
+  --flow-end: #681409;
 }
 .balance-flow-wash,
 .balance-flow-ribbon,
@@ -39,12 +52,17 @@
     radial-gradient(
       ellipse at 88% 72%,
       var(--flow-paper) 0%,
-      #ffb38a 11%,
+      var(--flow-transition) 11%,
       var(--flow-ember) 27%,
-      #7d1008 43%,
+      var(--flow-shadow-stop) 43%,
       transparent 65%
     ),
-    linear-gradient(145deg, #111214 20%, #201213 72%, #681409);
+    linear-gradient(
+      145deg,
+      var(--flow-start) 20%,
+      var(--flow-mid) 72%,
+      var(--flow-end)
+    );
   animation-name: county-balance-wash;
   animation-duration: 16s;
 }
@@ -81,7 +99,7 @@
   background: linear-gradient(
     90deg,
     var(--flow-veil) 0%,
-    #101113b3 28%,
+    var(--flow-veil-mid) 28%,
     transparent 82%
   );
 }
@@ -91,9 +109,12 @@
   height: 220px;
   right: -48px;
   top: 44px;
-  color: #fff1e4;
+  color: #a95a2b;
   opacity: 0.065;
   rotate: -12deg;
+}
+[data-theme="dark"] .balance-flow-emblem {
+  color: #fff1e4;
 }
 .balance-flow[data-running="true"] > div {
   animation-play-state: running;

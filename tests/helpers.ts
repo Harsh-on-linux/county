@@ -18,6 +18,13 @@ export async function setMoney(page: Page, label: string, value: string) {
     .click();
 }
 export async function choose(page: Page, label: string, option: string) {
+  if (
+    !(await page
+      .getByRole("combobox", { name: label, exact: true })
+      .isVisible()) &&
+    (await page.getByRole("button", { name: /^Filters/ }).isVisible())
+  )
+    await page.getByRole("button", { name: /^Filters/ }).click();
   await page.getByRole("combobox", { name: label, exact: true }).click();
   await page.getByRole("option", { name: option, exact: true }).click();
 }
