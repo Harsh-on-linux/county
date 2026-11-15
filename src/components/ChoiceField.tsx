@@ -1,5 +1,6 @@
 import { useEffect, useId, useRef, useState } from "react";
 import { Check, ChevronDown } from "lucide-react";
+import { BurstMark } from "./BurstMark";
 export function ChoiceField({
   label,
   name,
@@ -109,7 +110,7 @@ export function ChoiceField({
             }
           }}
         >
-          {options.map((o, i) => (
+          {options.map((o) => (
             <button
               key={o.value}
               type="button"
@@ -117,7 +118,7 @@ export function ChoiceField({
               aria-selected={o.value === selected}
               onClick={() => select(o.value)}
             >
-              <i className={"choice-dot tone-" + (i % 5)} />
+              <BurstMark className="choice-symbol" />
               <span>{o.label}</span>
               {o.value === selected && <Check size={15} />}
             </button>

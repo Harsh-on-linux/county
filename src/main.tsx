@@ -89,6 +89,9 @@ import { UnlabelledInbox } from "./components/UnlabelledInbox";
 import { FamilySettings } from "./components/FamilySettings";
 import { EmailSignIn } from "./components/EmailSignIn";
 import { SignInScreen } from "./components/SignInScreen";
+import { BurstMark } from "./components/BurstMark";
+import { AccountColour, accountColour } from "./components/AccountColour";
+import { scanBounds, type ScanRange } from "./scanRange";
 import {
   ingestMessages,
   matchSuggestion,
@@ -102,6 +105,7 @@ import "./opening.css";
 import "./balance-card.css";
 import "./review.css";
 import "./auth.css";
+import "./readability.css";
 
 if (import.meta.env.PROD && "serviceWorker" in navigator && !isAndroid) {
   void navigator.serviceWorker.register("/sw.js").catch(console.error);
@@ -370,7 +374,7 @@ function App() {
       toast("Could not save. " + (e as Error).message);
     }
   }
-  async function scanMessages(requestPermission = true) {
+  async function scanMessages(requestPermission = true, range?: ScanRange) {
     if (!isAndroid || scanRunning.current || !current.current) return;
     scanRunning.current = true;
     setScanning(true);
@@ -378,8 +382,10 @@ function App() {
     try {
       const previousScan =
         current.current.lastSmsScan && Date.parse(current.current.lastSmsScan);
+      const bounds = range ? scanBounds(range) : null;
       const { messages } = await Native.readSms({
         requestPermission,
+        ...(bounds || {}),
         ...(!requestPermission && previousScan
           ? { since: previousScan - 60 * 60 * 1000 }
           : {}),
@@ -387,12 +393,21 @@ function App() {
       let added = 0;
       await commit((live) => {
         if (!requestPermission && !live.smsCapture) return live;
-        const result = ingestMessages(live, messages);
+        const result = ingestMessages(
+          live,
+          bounds
+            ? messages.filter(
+                (m) =>
+                  m.timestamp >= bounds.since && m.timestamp < bounds.until,
+              )
+            : messages,
+        );
         added = result.added;
         return {
           ...result.data,
           smsCapture: true,
           lastSmsScan: new Date().toISOString(),
+          ...(range ? { smsScanRange: range } : {}),
         };
       });
       if (requestPermission)
@@ -908,7 +923,7 @@ function App() {
             ))}
           </nav>
           <div className="sidebar-note">
-            <span className="status-dot" />
+            <BurstMark className="status-symbol" />
             <strong>A little more peace of mind.</strong>
             <p>Your records are saved on this device, even offline.</p>
           </div>
@@ -939,7 +954,11 @@ function App() {
               className="sync-pill"
               onClick={() => (user ? void sync() : setModal("settings"))}
             >
-              {online ? <span className="status-dot" /> : <WifiOff size={14} />}
+              {online ? (
+                <BurstMark className="status-symbol" />
+              ) : (
+                <WifiOff size={14} />
+              )}
               <span>{!online ? "Offline · saved locally" : syncStatus}</span>
             </button>
             <button
@@ -1001,7 +1020,8 @@ function App() {
                     />
                     <div className="card-top">
                       <span>
-                        <span className="tiny-dot" /> YOUR AVAILABLE MONEY
+                        <BurstMark className="balance-symbol" /> YOUR AVAILABLE
+                        MONEY
                       </span>
                       <Wallet size={20} />
                     </div>
@@ -1092,6 +1112,7 @@ function App() {
                       return (
                         <button
                           className="account-card"
+                          data-account-colour={accountColour(a)}
                           key={a.id}
                           onClick={() => {
                             openLedger("", a.id);
@@ -1194,7 +1215,7 @@ function App() {
                 android={isAndroid}
                 scanning={scanning}
                 scanError={scanError}
-                onScan={() => void scanMessages()}
+                onScan={(range) => void scanMessages(true, range)}
                 onToggle={() =>
                   void change((live) => ({
                     ...live,
@@ -1533,17 +1554,19 @@ function App() {
                 : suggestion
                   ? "Label transaction"
                   : "Make a record"
-              : modal === "account"
-                ? "Add an account"
-                : modal === "accounts"
-                  ? "Your accounts"
-                  : modal === "settings"
-                    ? "Make County yours"
-                    : modal === "family"
-                      ? "Your household"
-                      : modal.startsWith("shared-edit")
-                        ? "Shared expense"
-                        : "County"
+              : modal.startsWith("account-edit:")
+                ? "Edit account"
+                : modal === "account"
+                  ? "Add an account"
+                  : modal === "accounts"
+                    ? "Your accounts"
+                    : modal === "settings"
+                      ? "Make County yours"
+                      : modal === "family"
+                        ? "Your household"
+                        : modal.startsWith("shared-edit")
+                          ? "Shared expense"
+                          : "County"
           }
           close={() => {
             setModal(null);
@@ -1632,18 +1655,38 @@ function App() {
               }
             />
           )}
-          {modal === "account" && (
+          {(modal === "account" || modal.startsWith("account-edit:")) && (
             <AccountForm
+              key={modal}
+              account={
+                modal.startsWith("account-edit:")
+                  ? d.accounts.find((a) => a.id === modal.slice(13))
+                  : undefined
+              }
               busy={busy}
               onSave={(a) =>
                 void attempt(async () => {
                   await commit((live) => ({
                     ...live,
-                    accounts: [...live.accounts, a],
+                    accounts: live.accounts.some((item) => item.id === a.id)
+                      ? live.accounts.map((item) =>
+                          item.id === a.id ? a : item,
+                        )
+                      : [...live.accounts, a],
                   }));
-                  setModal(resumeEntry ? "entry" : null);
+                  setModal(
+                    modal.startsWith("account-edit:")
+                      ? "accounts"
+                      : resumeEntry
+                        ? "entry"
+                        : null,
+                  );
                   setResumeEntry(false);
-                  toast("Account added.");
+                  toast(
+                    modal.startsWith("account-edit:")
+                      ? "Account updated."
+                      : "Account added.",
+                  );
                 })
               }
             />
@@ -1656,7 +1699,11 @@ function App() {
               {d.accounts.map((a) => {
                 const Icon = accountIcon[a.type];
                 return (
-                  <div className="payer-row" key={a.id}>
+                  <div
+                    className="payer-row manage-account-row"
+                    key={a.id}
+                    data-account-colour={accountColour(a)}
+                  >
                     <Icon size={20} />
                     <strong>{a.name}</strong>
                     <span>
@@ -1667,6 +1714,13 @@ function App() {
                         true,
                       )}
                     </span>
+                    <button
+                      className="icon-button"
+                      aria-label={"Edit " + a.name}
+                      onClick={() => setModal("account-edit:" + a.id)}
+                    >
+                      <Settings size={18} />
+                    </button>
                   </div>
                 );
               })}
@@ -2319,12 +2373,18 @@ function EntryForm({
               <button
                 type="button"
                 key={t}
+                aria-label={t === "adjustment" ? "Adjustment" : undefined}
                 className={type === t ? "selected" : ""}
                 onClick={() => setType(t)}
               >
-                {t === "adjustment"
-                  ? "Adjustment"
-                  : t[0].toUpperCase() + t.slice(1)}
+                {t === "adjustment" ? (
+                  <>
+                    <span className="entry-type-full">Adjustment</span>
+                    <span className="entry-type-short">Adjust</span>
+                  </>
+                ) : (
+                  t[0].toUpperCase() + t.slice(1)
+                )}
               </button>
             ),
           )}
@@ -2526,11 +2586,14 @@ function EntryForm({
 function AccountForm({
   busy,
   onSave,
+  account,
 }: {
   busy: boolean;
   onSave: (a: Account) => void;
+  account?: Account;
 }) {
-  const [type, setType] = useState<Account["type"]>("bank"),
+  const [type, setType] = useState<Account["type"]>(account?.type || "bank"),
+    [color, setColor] = useState(account ? accountColour(account) : "lilac"),
     [error, setError] = useState("");
   return (
     <form
@@ -2538,13 +2601,20 @@ function AccountForm({
         e.preventDefault();
         try {
           const f = new FormData(e.currentTarget);
+          const name = String(f.get("name")).trim();
+          if (!name) throw new Error("Enter an account name.");
           const raw = String(f.get("balance") || "0");
           const opening = /^0(?:\.0{1,2})?$/.test(raw) ? 0 : amountOf(raw);
           onSave({
-            id: uid(),
-            name: String(f.get("name")).trim(),
+            id: account?.id || uid(),
+            name,
             type,
-            opening: type === "card" ? -opening : opening,
+            opening: account
+              ? account.opening
+              : type === "card"
+                ? -opening
+                : opening,
+            color,
           });
         } catch (e) {
           setError((e as Error).message);
@@ -2552,19 +2622,23 @@ function AccountForm({
       }}
     >
       <p className="dialog-intro">
-        A place for the money you have, or the credit you use.
+        {account
+          ? "Choose a name and colour that are easy to recognise."
+          : "A place for the money you have, or the credit you use."}
       </p>
-      <ChoiceField
-        label="Account type"
-        value={type}
-        onChange={(v) => setType(v as Account["type"])}
-        options={[
-          { value: "bank", label: "Bank account" },
-          { value: "cash", label: "Cash" },
-          { value: "wallet", label: "Wallet" },
-          { value: "card", label: "Credit card" },
-        ]}
-      />
+      {!account && (
+        <ChoiceField
+          label="Account type"
+          value={type}
+          onChange={(v) => setType(v as Account["type"])}
+          options={[
+            { value: "bank", label: "Bank account" },
+            { value: "cash", label: "Cash" },
+            { value: "wallet", label: "Wallet" },
+            { value: "card", label: "Credit card" },
+          ]}
+        />
+      )}
       <label>
         Account name
         <input
@@ -2572,22 +2646,30 @@ function AccountForm({
           required
           maxLength={50}
           placeholder="e.g. My savings account"
+          defaultValue={account?.name}
         />
       </label>
-      <MoneyField
-        name="balance"
-        label={
-          type === "card" ? "Amount currently owed (₹)" : "Current balance (₹)"
-        }
-        defaultValue="0"
-      />
-      <p className="caption">
-        This is your starting point. County does not connect to or move money
-        from your bank.
-      </p>
+      <AccountColour value={color} onChange={setColor} />
+      {!account && (
+        <MoneyField
+          name="balance"
+          label={
+            type === "card"
+              ? "Amount currently owed (₹)"
+              : "Current balance (₹)"
+          }
+          defaultValue="0"
+        />
+      )}
+      {!account && (
+        <p className="caption">
+          This is your starting point. County does not connect to or move money
+          from your bank.
+        </p>
+      )}
       {error && <p className="error">{error}</p>}
       <button className="primary wide" disabled={busy}>
-        Add account <Plus size={17} />
+        {account ? "Save account" : "Add account"} <Plus size={17} />
       </button>
     </form>
   );

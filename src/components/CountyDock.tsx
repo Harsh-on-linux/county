@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { ArrowUpRight, Check, ChevronUp, Plus, X } from "lucide-react";
 import { App as CapacitorApp } from "@capacitor/app";
 import { isAndroid } from "../storage";
+import { BurstMark } from "./BurstMark";
 const sections = [
   { id: "Home", label: "Overview", hint: "Your everyday money" },
   { id: "Activity", label: "The ledger", hint: "Every in. Every out." },
@@ -136,7 +137,7 @@ export function CountyDock({
           aria-expanded={open}
           onClick={() => setOpen(!open)}
         >
-          <span className="dock-active-dot" />
+          <BurstMark className="dock-active-symbol" />
           <span>{current.label}</span>
           <small>0{sections.indexOf(current) + 1}</small>
           {open ? <X size={16} /> : <ChevronUp size={16} />}

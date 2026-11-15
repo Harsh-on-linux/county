@@ -14,6 +14,8 @@ Cold starts use a locally bundled Anime.js timeline: a front-facing mark rises f
 
 The available-money card has a slow flowing satin gradient in pearl/lilac for light theme and graphite/violet for dark theme. Its balance and controls stay stationary. Motion pauses while the card is offscreen, the app is hidden, a modal is open, or the intro is playing. Reduced motion keeps a static surface. No external media or runtime network request is needed.
 
+Text and controls use a larger reading scale, with wrapping layouts for compact phones in both themes. Decorative status marks use the supplied rounded eight-ray symbol, rebuilt as SVG; the County logo remains unchanged. Accounts have six named colour options. Choose one during setup or account creation, or use **Manage accounts → Edit** to change an existing account's name and colour while preserving its balance and history.
+
 ## Run locally
 
 Requires Node 22+.
@@ -55,7 +57,7 @@ npm run android:sync
 
 The installable debug APK is `android/app/build/outputs/apk/debug/app-debug.apk`. It is a private test build, not a Play Store release. Minimum Android version: Android 7 (API 24). The first build downloads Gradle and Android dependencies. A JDK 21 was downloaded to the ignored `.tools` directory during implementation; it is a local build convenience, not an app dependency or part of source control.
 
-The native plugin asks for `READ_SMS` when the user enables message capture or taps **Check messages**. It scans up to 10,000 inbox messages from the last 90 days. After opting in, County checks on opening/resuming the unlocked app and every 30 seconds while it is visible. The checkbox in Unlabelled turns these checks off. It does not run a background service or read messages while the app is closed. Automatic checks never open a permission prompt; a revoked permission is explained in the inbox. Denying permission leaves manual tracking usable.
+The native plugin asks for `READ_SMS` when the user enables message capture or taps **Check messages**. In Unlabelled, choose the last 7, 30, or 90 days, or a custom start/end date, before scanning up to 10,000 inbox messages. The end date includes its entire local day. Manual scans save their date range; messages outside that range remain available for later scans. After opting in, County checks for new messages on opening/resuming the unlocked app and every 30 seconds while it is visible. These automatic checks remain incremental regardless of the manual range. The checkbox in Unlabelled turns them off. It does not run a background service or read messages while the app is closed. Automatic checks never open a permission prompt; a revoked permission is explained in the inbox. Denying permission leaves manual tracking usable.
 
 **Unlabelled** is a dedicated destination, accessible from Home, the ledger, and navigation. Captures never affect balances until the user selects an account/category and saves. Discarded items can be restored, repeated scans do not bring them back, and manual duplicates can be explicitly matched without adding another expense. The browser preview supports pasting a bank message for the same review flow. Parsing runs locally; raw bodies are not saved to County or sent to the server. Only financial details, sender/account hints, and stable message IDs are kept. Google Play SMS permission approval is a separate release requirement.
 

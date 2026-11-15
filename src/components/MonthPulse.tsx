@@ -1,4 +1,5 @@
 import { totals, type Entry } from "../domain";
+import { BurstMark } from "./BurstMark";
 export function MonthPulse({
   entries,
   month,
@@ -33,7 +34,7 @@ export function MonthPulse({
           </h2>
         </div>
         <span className="pulse-key">
-          <i /> Spending days
+          <BurstMark /> Spending days
         </span>
       </div>
       <div className="pulse-weekdays">

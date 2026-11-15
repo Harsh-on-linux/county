@@ -35,13 +35,14 @@ public class CountyNativePlugin extends Plugin {
         else call.reject("SMS permission was not granted. Manual tracking still works.");
     }
     private void collectSms(PluginCall call) {
-        // Explicit, user-initiated scan of the past 90 days; no raw SMS leaves the device.
+        // Scan only the requested date window; no raw SMS leaves the device.
         getBridge().execute(() -> {
             JSArray messages = new JSArray();
             long since = System.currentTimeMillis() - 90L * 24 * 60 * 60 * 1000;
             Long requestedSince = call.getLong("since");
-            if (requestedSince != null) since = Math.max(since, Math.min(requestedSince, System.currentTimeMillis()));
-            try (Cursor cursor = getContext().getContentResolver().query(Uri.parse("content://sms/inbox"), new String[]{"_id", "body", "date", "address"}, "date >= ?", new String[]{Long.toString(since)}, "date DESC")) {
+            if (requestedSince != null) since = Math.max(0, Math.min(requestedSince, System.currentTimeMillis()));
+            long until = call.getLong("until", System.currentTimeMillis() + 1);
+            try (Cursor cursor = getContext().getContentResolver().query(Uri.parse("content://sms/inbox"), new String[]{"_id", "body", "date", "address"}, "date >= ? AND date < ?", new String[]{Long.toString(since), Long.toString(until)}, "date DESC")) {
                 if (cursor != null) while(cursor.moveToNext() && messages.length() < 10000) {
                     JSObject message = new JSObject();
                     String body = cursor.getString(1);

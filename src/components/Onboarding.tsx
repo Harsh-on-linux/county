@@ -19,6 +19,8 @@ import { amountOf, money, uid, type Account, type Data } from "../domain";
 import { save, isAndroid } from "../storage";
 import { App as CapacitorApp } from "@capacitor/app";
 import "./onboarding.css";
+import { AccountColour } from "./AccountColour";
+import { BurstMark } from "./BurstMark";
 import { MoneyField } from "./MoneyField";
 
 function WelcomeArt() {
@@ -39,7 +41,7 @@ function WelcomeArt() {
         <div className="art-card-header">
           <Wallet size={17} strokeWidth={1.5} />
           <span>YOUR EVERYDAY MONEY</span>
-          <span className="art-card-dot" />
+          <BurstMark className="art-card-symbol" />
         </div>
         <small>A little more in control.</small>
         <strong>
@@ -126,6 +128,7 @@ export function Onboarding({
     [name, setName] = useState(data.name),
     [type, setType] = useState<Account["type"]>("cash"),
     [accountName, setAccountName] = useState("Cash"),
+    [accountColor, setAccountColor] = useState("sage"),
     [opening, setOpening] = useState(""),
     [saving, setSaving] = useState(false),
     [error, setError] = useState(""),
@@ -179,6 +182,7 @@ export function Onboarding({
                     name: cleanAccount,
                     type,
                     opening: type === "card" ? -value : value,
+                    color: accountColor,
                   },
                 ],
           };
@@ -438,6 +442,10 @@ export function Onboarding({
                         required
                       />
                     </label>
+                    <AccountColour
+                      value={accountColor}
+                      onChange={setAccountColor}
+                    />
                     <MoneyField
                       label={
                         type === "card"

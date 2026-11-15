@@ -13,6 +13,8 @@ import {
 } from "lucide-react";
 import { duplicate, money, today, type Data, type Suggestion } from "../domain";
 import { suggestionStatus } from "../capture";
+import { ChoiceField } from "./ChoiceField";
+import { scanBounds, type ScanRange } from "../scanRange";
 
 export function UnlabelledInbox({
   data,
@@ -32,7 +34,7 @@ export function UnlabelledInbox({
   android: boolean;
   scanning: boolean;
   scanError: string;
-  onScan: () => void;
+  onScan: (range: ScanRange) => void;
   onToggle: () => void;
   onPaste: (body: string, date: string) => Promise<void>;
   onReview: (suggestion: Suggestion) => void;
@@ -47,6 +49,22 @@ export function UnlabelledInbox({
     [error, setError] = useState(""),
     [working, setWorking] = useState(false),
     [undo, setUndo] = useState<string | null>(null);
+  const [period, setPeriod] = useState(data.smsScanRange ? "custom" : "30");
+  const [from, setFrom] = useState(
+    data.smsScanRange?.from ||
+      new Date(Date.now() - 29 * 86400000).toLocaleDateString("en-CA"),
+  );
+  const [to, setTo] = useState(data.smsScanRange?.to || today());
+  function selectPeriod(value: string) {
+    setPeriod(value);
+    setError("");
+    if (value !== "custom") {
+      const start = new Date();
+      start.setDate(start.getDate() - Number(value) + 1);
+      setFrom(start.toLocaleDateString("en-CA"));
+      setTo(today());
+    }
+  }
   const pending = data.suggestions.filter(
     (s) => suggestionStatus(s, data.entries) === "unlabelled",
   );
@@ -95,9 +113,63 @@ export function UnlabelledInbox({
             </p>
           </div>
         </div>
+        <div className="scan-period">
+          <ChoiceField
+            label="Scan period"
+            value={period}
+            onChange={selectPeriod}
+            options={[
+              { value: "7", label: "Last 7 days" },
+              { value: "30", label: "Last 30 days" },
+              { value: "90", label: "Last 90 days" },
+              { value: "custom", label: "Custom dates" },
+            ]}
+          />
+          {period === "custom" && (
+            <div className="scan-dates">
+              <label>
+                From date
+                <input
+                  type="date"
+                  value={from}
+                  max={to || today()}
+                  onChange={(e) => setFrom(e.target.value)}
+                  disabled={scanning}
+                />
+              </label>
+              <label>
+                To date
+                <input
+                  type="date"
+                  value={to}
+                  min={from}
+                  max={today()}
+                  onChange={(e) => setTo(e.target.value)}
+                  disabled={scanning}
+                />
+              </label>
+            </div>
+          )}
+          <p>
+            Choose which messages to check. Automatic checks look for new
+            messages.
+          </p>
+        </div>
         <div className="capture-controls">
           {android ? (
-            <button className="secondary" disabled={scanning} onClick={onScan}>
+            <button
+              className="secondary"
+              disabled={scanning}
+              onClick={() => {
+                try {
+                  scanBounds({ from, to });
+                  setError("");
+                  onScan({ from, to });
+                } catch (e) {
+                  setError((e as Error).message);
+                }
+              }}
+            >
               <RefreshCw
                 size={15}
                 className={scanning ? "capture-scanning" : ""}

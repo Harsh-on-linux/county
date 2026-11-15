@@ -49,6 +49,11 @@ test("onboarding, real ledger, offline persistence, sharing, delete and restore"
   });
   await context.setOffline(true);
   await page.reload();
+  expect(
+    await page.evaluate(() =>
+      fetch("/brand/county-burst.svg").then((r) => r.ok),
+    ),
+  ).toBe(true);
   await expect(
     page.getByRole("heading", { name: "Hello, Harsh." }),
   ).toBeVisible();

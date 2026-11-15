@@ -1,8 +1,10 @@
+import { scanBounds } from "./scanRange";
 export type Account = {
   id: string;
   name: string;
   type: "bank" | "cash" | "card" | "wallet";
   opening: number;
+  color?: string;
 };
 export type Entry = {
   id: string;
@@ -46,6 +48,7 @@ export type Data = {
   sharedEdits?: SharedEntry[];
   smsCapture?: boolean;
   lastSmsScan?: string;
+  smsScanRange?: { from: string; to: string };
 };
 export type SharedEntry = {
   id: string;
@@ -312,6 +315,13 @@ export function csv(entries: Entry[], accounts: Account[]) {
 }
 export function readBackup(raw: string): Data {
   const d = JSON.parse(raw);
+  if (d?.smsScanRange !== undefined) {
+    try {
+      scanBounds(d.smsScanRange);
+    } catch {
+      throw new Error("Invalid saved message scan dates.");
+    }
+  }
   if (
     d?.sharedEdits !== undefined &&
     (!Array.isArray(d.sharedEdits) ||
@@ -352,7 +362,9 @@ export function readBackup(raw: string): Data {
       ids.has(a.id) ||
       typeof a.name !== "string" ||
       !["bank", "cash", "card", "wallet"].includes(a.type) ||
-      !Number.isSafeInteger(a.opening)
+      !Number.isSafeInteger(a.opening) ||
+      (a.color !== undefined &&
+        !["sage", "blue", "lilac", "peach", "rose", "sand"].includes(a.color))
     )
       throw new Error("Invalid account in backup.");
     ids.add(a.id);
