@@ -233,7 +233,7 @@
   letter-spacing: 0.12em;
 }
 .account-card[data-account-colour] {
-  border-radius: 17px;
+  border-radius: 20px;
   background: var(--account-fill);
   box-shadow: inset 0 1px 0 #ffffff8c;
 }

@@ -416,15 +416,6 @@
   gap: 15px;
   overflow: hidden;
 }
-.account-card[data-account-colour]::before {
-  content: "";
-  position: absolute;
-  left: 0;
-  top: 22px;
-  bottom: 22px;
-  width: 3px;
-  background: var(--account-ink);
-}
 .account-card[data-account-colour] .mini-icon {
   background: var(--account-fill);
   color: var(--account-ink);
