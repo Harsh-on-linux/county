@@ -1,7 +1,7 @@
 import { useState, type ReactNode } from "react";
 import { ArrowUpRight, ChevronDown, CalendarDays } from "lucide-react";
 import { money, monthEntries, today, totals, type Entry } from "../domain";
-import { ContourLines } from "./ContourLines";
+import { PrismSurface } from "./PrismSurface";
 
 export function InsightsView({
   entries,
@@ -40,7 +40,7 @@ export function InsightsView({
   return (
     <div className="insights-view">
       <section className="insight-overview" aria-label="Spending overview">
-        <ContourLines className="insight-contours" />
+        <PrismSurface tone="ink" />
         <span className="eyebrow">SPENDING, IN PERSPECTIVE</span>
         <span className="insight-main-label">Total spent</span>
         <strong className="insight-main-amount">{money(sum.expense)}</strong>

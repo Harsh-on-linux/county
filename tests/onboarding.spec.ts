@@ -104,6 +104,7 @@ test("dark theme, compact screens, and reduced motion remain usable", async ({
       () => document.documentElement.scrollWidth <= innerWidth,
     ),
   ).toBe(true);
+  await settle(page);
   await page.screenshot({
     path: "test-results/onboarding-dark-compact.png",
     fullPage: true,

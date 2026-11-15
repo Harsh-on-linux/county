@@ -11,7 +11,7 @@ import {
 } from "lucide-react";
 import { money, today, totals, type Data, type Entry } from "../domain";
 import { ChoiceField } from "./ChoiceField";
-import { ContourLines } from "./ContourLines";
+import { PrismSurface } from "./PrismSurface";
 
 export type LedgerFilters = {
   category: string;
@@ -60,7 +60,7 @@ export function LedgerView({
   return (
     <div className="ledger-view">
       <section className="ledger-statement" aria-label="Statement overview">
-        <ContourLines className="statement-contours" />
+        <PrismSurface />
         <div className="statement-heading">
           <span className="eyebrow">
             {active || query || day ? "IN THIS VIEW" : "YOUR STATEMENT"}

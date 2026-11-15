@@ -16,6 +16,7 @@ import { duplicate, money, today, type Data, type Suggestion } from "../domain";
 import { suggestionStatus } from "../capture";
 import { ChoiceField } from "./ChoiceField";
 import { scanBounds, type ScanRange } from "../scanRange";
+import { PrismSurface } from "./PrismSurface";
 
 export function UnlabelledInbox({
   data,
@@ -104,6 +105,7 @@ export function UnlabelledInbox({
   return (
     <div className="review-inbox">
       <div className="review-overview">
+        <PrismSurface />
         <div>
           <span className="eyebrow">WAITING FOR YOUR SAY</span>
           <strong>

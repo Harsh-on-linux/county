@@ -18,6 +18,7 @@ import {
 } from "lucide-react";
 import { csv, money, readBackup, today, type Data } from "../domain";
 import { download, isAndroid, Native } from "../storage";
+import { PrismSurface } from "./PrismSurface";
 
 type Update = (fn: (live: Data) => Data) => Promise<void>;
 export function SettingsView({
@@ -75,6 +76,7 @@ export function SettingsView({
   return (
     <div className="settings-view">
       <div className="settings-profile">
+        <PrismSurface tone="ink" />
         <span className="settings-avatar">
           {data.name.trim().slice(0, 1) || "Y"}
         </span>

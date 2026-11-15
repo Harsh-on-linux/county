@@ -1,18 +1,20 @@
-/* A concentrated orange-to-paper light bloom. The reading area stays dark. */
+/* Luminous colour behind a stationary, fluted-glass surface. */
 .balance-flow {
   --flow-base: #efece5;
-  --flow-ember: #f5792b;
-  --flow-paper: #fff7e9;
-  --flow-crest: #fffaf0b3;
-  --flow-fold: #bd4c2b30;
+  --flow-ember: #ff7526;
+  --flow-paper: #fff4c9;
+  --flow-crest: #fff0cb96;
+  --flow-fold: #da651b4d;
   --flow-glow: #ffc6929c;
   --flow-veil: #f2efe7;
   --flow-veil-mid: #f6f0e4c7;
   --flow-transition: #ffd7a4;
-  --flow-shadow-stop: #bc5026;
+  --flow-shadow-stop: #e49c59;
   --flow-start: #f3f0e8;
-  --flow-mid: #eec5a2;
-  --flow-end: #e45d21;
+  --flow-mid: #efbb80;
+  --flow-end: #f87926;
+  --reed-light: #fffdf1a6;
+  --reed-shadow: #994d2021;
   position: absolute;
   inset: 0;
   z-index: 0;
@@ -36,6 +38,8 @@
   --flow-start: #111214;
   --flow-mid: #201213;
   --flow-end: #681409;
+  --reed-light: #ffd3a852;
+  --reed-shadow: #080b106b;
 }
 .balance-flow-wash,
 .balance-flow-ribbon,
@@ -50,12 +54,12 @@
   inset: -15%;
   background:
     radial-gradient(
-      ellipse at 88% 72%,
+      ellipse at 81% 68%,
       var(--flow-paper) 0%,
-      var(--flow-transition) 11%,
-      var(--flow-ember) 27%,
-      var(--flow-shadow-stop) 43%,
-      transparent 65%
+      var(--flow-transition) 14%,
+      var(--flow-ember) 35%,
+      var(--flow-shadow-stop) 56%,
+      transparent 78%
     ),
     linear-gradient(
       145deg,
@@ -67,20 +71,26 @@
   animation-duration: 16s;
 }
 .balance-flow-ribbon {
-  inset: -95% -65%;
-  background: linear-gradient(
-    105deg,
-    transparent 27%,
-    var(--flow-fold) 36%,
-    transparent 43%,
-    var(--flow-crest) 50%,
-    var(--flow-crest) 52%,
-    transparent 61%,
-    var(--flow-fold) 70%,
-    transparent 80%
-  );
+  inset: -35%;
+  background:
+    radial-gradient(ellipse at 63% 10%, var(--flow-fold), transparent 40%),
+    radial-gradient(ellipse at 85% 88%, var(--flow-crest), transparent 46%);
   animation-name: county-balance-ribbon;
   animation-duration: 12s;
+}
+.balance-flow-reeds {
+  position: absolute;
+  inset: 0;
+  background: repeating-linear-gradient(
+    90deg,
+    transparent 0px,
+    var(--reed-light) 3px,
+    #ffffff0a 7px,
+    var(--reed-shadow) 12px,
+    transparent 18px
+  );
+  mask-image: linear-gradient(90deg, transparent 12%, #000 38%, #000);
+  opacity: 0.9;
 }
 .balance-flow-glow {
   inset: -45%;
@@ -129,10 +139,10 @@
 }
 @keyframes county-balance-ribbon {
   from {
-    transform: translate(-17%, 4%) rotate(-12deg);
+    transform: translate(-8%, 3%) scale(1.04);
   }
   to {
-    transform: translate(16%, -4%) rotate(8deg);
+    transform: translate(8%, -3%) scale(1.06);
   }
 }
 @keyframes county-balance-glow {
