@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import {
   ArrowLeft,
   ArrowRight,
+  ArrowUpRight,
   Check,
   ChevronRight,
   CreditCard,
@@ -26,53 +27,18 @@ import { MoneyField } from "./MoneyField";
 function WelcomeArt() {
   return (
     <div className="welcome-art" aria-hidden="true">
-      <div className="welcome-orbit orbit-a" />
-      <div className="welcome-orbit orbit-b" />
-      <div className="welcome-float float-income">
-        <span>
-          <ArrowRight size={14} />
-        </span>
-        <div>
-          Money in<strong>+ ₹32,000</strong>
-        </div>
-        <Check size={13} />
-      </div>
-      <div className="welcome-money-card">
-        <div className="art-card-header">
-          <Wallet size={17} strokeWidth={1.5} />
-          <span>YOUR EVERYDAY MONEY</span>
-          <BurstMark className="art-card-symbol" />
-        </div>
-        <small>A little more in control.</small>
-        <strong>
-          ₹24,850<span>.00</span>
-        </strong>
-        <div className="art-card-line" />
-        <div className="art-card-footer">
+      <div className="welcome-money-card welcome-poster">
+        <span className="poster-kicker">COUNTY / EVERYDAY MONEY</span>
+        <BurstMark className="poster-emblem" />
+        <div className="poster-caption">
           <span>
-            <ShieldCheck size={12} /> Personal space
+            Make room
+            <br />
+            for clarity.
           </span>
-          <span>•••• 0084</span>
+          <ArrowUpRight size={28} strokeWidth={1.25} />
         </div>
       </div>
-      <div className="welcome-float float-expense">
-        <span>
-          <Wallet size={17} />
-        </span>
-        <div>
-          Groceries<strong>₹850</strong>
-        </div>
-        <small>Just recorded</small>
-      </div>
-      <span className="welcome-spark spark-a">
-        <BurstMark />
-      </span>
-      <span className="welcome-spark spark-b">
-        <BurstMark />
-      </span>
-      <span className="art-example">
-        An illustration of your everyday money
-      </span>
     </div>
   );
 }

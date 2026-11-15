@@ -1,6 +1,7 @@
 import { setMoney, choose } from "./helpers";
 import { test, expect, type Page } from "./fixtures";
 async function settle(page: Page) {
+  await expect(page.locator(".opening-screen")).toHaveCount(0);
   await page.evaluate(() =>
     document
       .getAnimations()

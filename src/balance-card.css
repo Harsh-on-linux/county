@@ -1,13 +1,12 @@
-/* Slow satin folds, inspired by the supplied card reference. Text stays still. */
+/* A concentrated orange-to-paper light bloom. The reading area stays dark. */
 .balance-flow {
-  --flow-base: #702512;
-  --flow-cool: #922d0e;
-  --flow-violet: #b54216;
-  --flow-soft: #b16b42;
-  --flow-crest: #edb89142;
-  --flow-fold: #331d1b70;
-  --flow-glow: #eac6a63d;
-  --flow-veil: #21130f70;
+  --flow-base: #111214;
+  --flow-ember: #f05216;
+  --flow-paper: #fff0df;
+  --flow-crest: #ffe6d142;
+  --flow-fold: #7c160c55;
+  --flow-glow: #ffd0ae80;
+  --flow-veil: #101113;
   position: absolute;
   inset: 0;
   z-index: 0;
@@ -18,14 +17,12 @@
   contain: paint;
 }
 [data-theme="dark"] .balance-flow {
-  --flow-base: #562413;
-  --flow-cool: #8d280e;
-  --flow-violet: #a13b16;
-  --flow-soft: #8d5636;
-  --flow-crest: #e0a47a38;
-  --flow-fold: #24181770;
-  --flow-glow: #dfb49233;
-  --flow-veil: #21130f80;
+  --flow-base: #0b0c0e;
+  --flow-ember: #e94a10;
+  --flow-paper: #f7dfc9;
+  --flow-crest: #ffe6d133;
+  --flow-fold: #6c140b55;
+  --flow-glow: #ffbd9180;
 }
 .balance-flow-wash,
 .balance-flow-ribbon,
@@ -37,11 +34,17 @@
   animation-direction: alternate;
 }
 .balance-flow-wash {
-  inset: -35%;
+  inset: -15%;
   background:
-    radial-gradient(ellipse at 16% 25%, var(--flow-cool), transparent 58%),
-    radial-gradient(ellipse at 76% 62%, var(--flow-violet), transparent 58%),
-    radial-gradient(ellipse at 40% 90%, var(--flow-soft), transparent 54%);
+    radial-gradient(
+      ellipse at 88% 72%,
+      var(--flow-paper) 0%,
+      #ffb38a 11%,
+      var(--flow-ember) 27%,
+      #7d1008 43%,
+      transparent 65%
+    ),
+    linear-gradient(145deg, #111214 20%, #201213 72%, #681409);
   animation-name: county-balance-wash;
   animation-duration: 16s;
 }
@@ -64,9 +67,9 @@
 .balance-flow-glow {
   inset: -45%;
   background: radial-gradient(
-    ellipse at 60% 50%,
+    ellipse at 96% 90%,
     var(--flow-glow),
-    transparent 53%
+    transparent 38%
   );
   animation-name: county-balance-glow;
   animation-duration: 19s;
@@ -75,9 +78,22 @@
   content: "";
   position: absolute;
   inset: 0;
-  background:
-    linear-gradient(90deg, var(--flow-veil), transparent 80%),
-    linear-gradient(#21130f55, #21130f55);
+  background: linear-gradient(
+    90deg,
+    var(--flow-veil) 0%,
+    #101113b3 28%,
+    transparent 82%
+  );
+}
+.balance-flow-emblem {
+  position: absolute;
+  width: 220px;
+  height: 220px;
+  right: -48px;
+  top: 44px;
+  color: #fff1e4;
+  opacity: 0.065;
+  rotate: -12deg;
 }
 .balance-flow[data-running="true"] > div {
   animation-play-state: running;

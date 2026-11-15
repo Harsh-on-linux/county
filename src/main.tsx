@@ -1055,8 +1055,10 @@ function App() {
                     </div>
                     <p>
                       Across{" "}
-                      {d.accounts.filter((a) => a.type !== "card").length} cash,
-                      bank & wallet accounts
+                      {d.accounts.filter((a) => a.type !== "card").length}{" "}
+                      {d.accounts.filter((a) => a.type !== "card").length === 1
+                        ? "account"
+                        : "accounts"}
                     </p>
                     <div className="balance-bottom">
                       <span>
@@ -1100,6 +1102,7 @@ function App() {
                 </div>
                 <button
                   className="inbox-banner"
+                  data-pending={pending.length > 0}
                   onClick={() => setTab("Unlabelled")}
                 >
                   <span className="round-icon lilac">

@@ -181,7 +181,7 @@ for (const theme of ["light", "dark"])
     await page.setViewportSize({ width: 320, height: 640 });
     await expect(page.locator("html")).toHaveCSS(
       "background-color",
-      theme === "dark" ? "rgb(48, 50, 54)" : "rgb(216, 214, 201)",
+      theme === "dark" ? "rgb(19, 20, 22)" : "rgb(245, 245, 245)",
     );
     await expect(page.locator(".mobile-brand .brand-mark")).toHaveCSS(
       "color",
