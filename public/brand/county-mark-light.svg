@@ -1,6 +1,7 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" fill="#f5f5f5">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" fill="#e65416">
+  <path fill="#f5f5f5" d="M128 0 A128 128 0 0 0 256 128 A128 128 0 0 0 128 256 A128 128 0 0 0 0 128 A128 128 0 0 0 128 0Z"/>
   <path d="M128 0 A128 128 0 0 0 0 128 A128 128 0 0 0 128 0Z"/>
-  <path fill="#e65416" d="M128 0 A128 128 0 0 0 0 128 A128 128 0 0 0 128 0Z" transform="rotate(90 128 128)"/>
+  <path d="M128 0 A128 128 0 0 0 0 128 A128 128 0 0 0 128 0Z" transform="rotate(90 128 128)"/>
   <path d="M128 0 A128 128 0 0 0 0 128 A128 128 0 0 0 128 0Z" transform="rotate(180 128 128)"/>
-  <path fill="#e65416" d="M128 0 A128 128 0 0 0 0 128 A128 128 0 0 0 128 0Z" transform="rotate(270 128 128)"/>
+  <path d="M128 0 A128 128 0 0 0 0 128 A128 128 0 0 0 128 0Z" transform="rotate(270 128 128)"/>
 </svg>

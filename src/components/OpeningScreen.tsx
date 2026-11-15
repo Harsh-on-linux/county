@@ -1,11 +1,12 @@
 import { useEffect, useId, useLayoutEffect, useRef } from "react";
 import { createTimeline, utils, type Timeline } from "animejs";
 import { ArrowRight } from "lucide-react";
-import { BrandMark, BrandPetals } from "./BrandMark";
-
-// The concave opening between the logo's four circular petals, centred at 0,0.
-const star =
-  "M0 -1 A1 1 0 0 0 1 0 A1 1 0 0 0 0 1 A1 1 0 0 0 -1 0 A1 1 0 0 0 0 -1Z";
+import {
+  BrandCentre,
+  BrandMark,
+  BrandPetals,
+  brandStarPath,
+} from "./BrandMark";
 
 function buildOpening(
   root: HTMLDivElement,
@@ -190,7 +191,7 @@ export function OpeningScreen({
             <rect width="100%" height="100%" fill="white" />
             <path
               className="intro-aperture"
-              d={star}
+              d={brandStarPath}
               fill="black"
               opacity="0"
             />
@@ -202,9 +203,12 @@ export function OpeningScreen({
           height="100%"
           mask={`url(#${maskId})`}
         />
-        <g className="intro-portal-mark">
-          <g className="intro-portal-origin">
-            <BrandPetals />
+        <g mask={`url(#${maskId})`}>
+          <g className="intro-portal-mark">
+            <g className="intro-portal-origin">
+              <BrandCentre />
+              <BrandPetals />
+            </g>
           </g>
         </g>
       </svg>
