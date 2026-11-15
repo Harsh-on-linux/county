@@ -3,6 +3,6 @@ const config: CapacitorConfig = {
   appId: "app.county.money",
   appName: "County",
   webDir: "dist",
-  android: { backgroundColor: "#101211" },
+  android: { backgroundColor: "#303236" },
 };
 export default config;

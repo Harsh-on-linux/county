@@ -1,6 +1,6 @@
 # County accounts, storage, and family sharing
 
-Every person signs in with their own email and a one-time code. Supabase Auth manages the identity and session. County remembers the session instead of asking for another code on every launch. First sign-in and re-sign-in after logout require internet access. Previously verified devices retain offline access to local records; explicit sign-out revokes that offline access. Optional Android device lock is a separate layer.
+New people first see an introduction and prepare their name and starting account locally. They then sign in with their own email and a one-time code before accessing records. Returning people can go straight to sign-in. The pre-authentication tour is available only on a pristine device, with no existing accounts, transactions, or captured payments; existing records stay behind authentication. Supabase Auth manages the identity and session. County remembers the session instead of asking for another code on every launch. First sign-in and re-sign-in after logout require internet access. Previously verified devices retain offline access to local records; explicit sign-out revokes that offline access. Optional Android device lock is a separate layer.
 
 For this family pilot, one phone profile is bound to the first signed-in account. Signing in as someone else cannot attach that phone's existing records to a different account. Mom, Dad, and Sister use separate accounts on their own phones. Current local records are preserved when adding sign-in.
 

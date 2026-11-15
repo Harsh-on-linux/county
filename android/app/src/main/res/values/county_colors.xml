@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-  <color name="county_background">#101211</color>
-  <color name="county_launch_background">#F1EFE9</color>
-  <color name="county_launch_foreground">#252820</color>
+  <color name="county_background">#303236</color>
+  <color name="county_launch_background">#D8D6C9</color>
+  <color name="county_launch_foreground">#E65416</color>
 </resources>

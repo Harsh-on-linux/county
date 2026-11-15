@@ -61,37 +61,37 @@ function buildOpening(
     }, 80)
     .add(
       flight,
-      { y: 0, duration: 760, ease: "cubicBezier(0.16, 1, 0.3, 1)" },
+      { y: 0, duration: 1040, ease: "cubicBezier(0.45, 0, 0.2, 1)" },
       80,
     )
     .add(
       caption,
-      { opacity: [0, 1], y: [6, 0], duration: 300, ease: "out(3)" },
-      560,
+      { opacity: [0, 1], y: [6, 0], duration: 360, ease: "inOut(3)" },
+      760,
     )
     .call(() => {
       root.dataset.phase = "settle";
-    }, 860)
+    }, 1120)
     .call(() => {
       root.dataset.phase = "reveal";
       // Swap identical marks before zooming. SVG transforms keep the enlarged
       // artwork vector-sharp instead of magnifying a composited HTML texture.
       portalMark.style.visibility = "visible";
       flight.style.visibility = "hidden";
-    }, 1120)
-    .add(caption, { opacity: 0, duration: 160, ease: "in(2)" }, 1120)
-    .add(hole, { opacity: [0, 1], duration: 100, ease: "inOut(2)" }, 1120)
+    }, 1420)
+    .add(caption, { opacity: 0, duration: 200, ease: "inOut(2)" }, 1420)
+    .add(hole, { opacity: [0, 1], duration: 100, ease: "inOut(2)" }, 1420)
     .add(
       portal,
       {
         scale: [1, coverScale],
-        duration: 760,
-        ease: "in(3)",
+        duration: 1100,
+        ease: "cubicBezier(0.65, 0, 0.35, 1)",
         onRender: renderPortal,
       },
-      1220,
+      1520,
     );
-  if (skip) timeline.add(skip, { opacity: 0, duration: 160 }, 1120);
+  if (skip) timeline.add(skip, { opacity: 0, duration: 160 }, 1420);
   return timeline;
 }
 

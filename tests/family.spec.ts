@@ -5,7 +5,11 @@ const owner = "10000000-0000-4000-8000-000000000001";
 const mom = "10000000-0000-4000-8000-000000000002";
 const invitation = "abcdef1234567890abcdef1234567890";
 
-async function familyApp(page: Page, existingOwner?: string) {
+async function familyApp(
+  page: Page,
+  existingOwner?: string,
+  firstRun?: "tour" | "signin",
+) {
   if (existingOwner)
     await page.addInitScript(
       (id) => localStorage.setItem("CapacitorStorage.county-device-owner", id),
@@ -13,16 +17,20 @@ async function familyApp(page: Page, existingOwner?: string) {
     );
   await page.setViewportSize({ width: 390, height: 844 });
   await page.addInitScript(
-    (data) =>
-      localStorage.setItem(
-        "CapacitorStorage.county-data",
-        JSON.stringify(data),
-      ),
+    (data) => {
+      if (!localStorage.getItem("CapacitorStorage.county-data"))
+        localStorage.setItem(
+          "CapacitorStorage.county-data",
+          JSON.stringify(data),
+        );
+    },
     {
       ...initial(),
-      name: "Harsh",
-      onboarded: true,
-      accounts: [{ id: "cash", name: "Cash", type: "cash", opening: 500000 }],
+      name: firstRun ? "" : "Harsh",
+      onboarded: !firstRun,
+      accounts: firstRun
+        ? []
+        : [{ id: "cash", name: "Cash", type: "cash", opening: 500000 }],
     },
   );
   const user = {
@@ -53,7 +61,10 @@ async function familyApp(page: Page, existingOwner?: string) {
         },
       });
     if (req.method() === "OPTIONS") return send({});
-    if (path.endsWith("/otp")) return send({});
+    if (path.endsWith("/otp")) {
+      calls.push({ name: "otp", args });
+      return send({});
+    }
     if (path.endsWith("/logout")) return send({});
     if (path.endsWith("/verify")) {
       if (args.token !== "12345678")
@@ -122,6 +133,41 @@ async function familyApp(page: Page, existingOwner?: string) {
   });
   await page.goto("/");
   await page.locator(".opening-screen").waitFor({ state: "hidden" });
+  if (firstRun) {
+    await expect(
+      page.getByRole("heading", { name: "Your money. In a good place." }),
+    ).toBeVisible();
+    await expect(page.getByRole("textbox", { name: "Your email" })).toHaveCount(
+      0,
+    );
+    expect(calls).toEqual([]);
+    if (firstRun === "signin") {
+      await page
+        .getByRole("button", { name: "Already use County? Sign in" })
+        .click();
+    } else {
+      await page.getByRole("button", { name: "Find your clarity" }).click();
+      await page
+        .getByRole("button", { name: "Make it yours", exact: true })
+        .click();
+      await page.getByPlaceholder("Your first name").fill("Harsh");
+      await page.getByRole("button", { name: "Create my space" }).click();
+      await expect(
+        page.getByRole("heading", { name: "Your space is ready, Harsh." }),
+      ).toBeVisible();
+      await page.screenshot({
+        path: "test-results/onboarding-before-email.png",
+        animations: "disabled",
+      });
+      expect(calls).toEqual([]);
+      await expect(page.locator(".balance-amount")).toHaveCount(0);
+      await page.getByRole("button", { name: "Continue with email" }).click();
+      await page.screenshot({
+        path: "test-results/signin-after-onboarding.png",
+        animations: "disabled",
+      });
+    }
+  }
   await expect(
     page.getByRole("heading", { name: /Your money\..*Your account\./ }),
   ).toBeVisible();
@@ -138,6 +184,15 @@ async function familyApp(page: Page, existingOwner?: string) {
     );
     return calls;
   }
+  if (firstRun === "signin") {
+    await expect(page.getByPlaceholder("Your first name")).toBeVisible();
+    await expect(
+      page.getByRole("button", { name: "Find your clarity" }),
+    ).toHaveCount(0);
+    await page.getByPlaceholder("Your first name").fill("Harsh");
+    await page.getByRole("button", { name: "Create my space" }).click();
+    await page.getByRole("button", { name: "Open my space" }).click();
+  }
   await expect(
     page.getByRole("heading", { name: "Hello, Harsh." }),
   ).toBeVisible();
@@ -149,6 +204,56 @@ async function familyApp(page: Page, existingOwner?: string) {
   ).toBeVisible();
   return calls;
 }
+
+test("a new user completes onboarding before email verification and records remain gated", async ({
+  page,
+}) => {
+  const calls = await familyApp(page, undefined, "tour");
+  expect(calls.filter((c) => c.name === "otp")).toHaveLength(1);
+  expect(
+    await page.evaluate(() =>
+      localStorage.getItem("CapacitorStorage.county-device-owner"),
+    ),
+  ).toBe(owner);
+  await page.getByRole("button", { name: "Close dialog" }).click();
+  await page.reload();
+  await expect(
+    page.getByRole("heading", { name: "Hello, Harsh." }),
+  ).toBeVisible();
+});
+
+test("returning users can sign in directly and skip the introductory tour", async ({
+  page,
+}) => {
+  await familyApp(page, undefined, "signin");
+});
+
+test("existing local records cannot be exposed through unfinished onboarding", async ({
+  page,
+}) => {
+  await page.addInitScript(
+    (data) =>
+      localStorage.setItem(
+        "CapacitorStorage.county-data",
+        JSON.stringify(data),
+      ),
+    {
+      ...initial(),
+      onboarded: false,
+      accounts: [
+        { id: "bank", name: "Private savings", type: "bank", opening: 9900000 },
+      ],
+    },
+  );
+  await page.goto("/");
+  await expect(page.getByRole("textbox", { name: "Your email" })).toBeVisible();
+  await expect(
+    page.getByRole("button", { name: "Find your clarity" }),
+  ).toHaveCount(0);
+  await expect(page.getByText("Private savings", { exact: true })).toHaveCount(
+    0,
+  );
+});
 
 test("family sign-in, creation, invitation, and member removal have a continuous flow", async ({
   page,

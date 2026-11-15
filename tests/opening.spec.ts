@@ -88,7 +88,7 @@ for (const theme of ["light", "dark"] as const)
     await expect(scene).toHaveAttribute("data-motion", "animejs");
     await expect(page.locator(".intro-curtain-fill")).toHaveCSS(
       "fill",
-      theme === "dark" ? "rgb(14, 16, 16)" : "rgb(241, 239, 233)",
+      theme === "dark" ? "rgb(48, 50, 54)" : "rgb(216, 214, 201)",
     );
     await expect(scene).toHaveCSS("background-image", "none");
     await expect(page.locator(".intro-front")).toHaveCSS(

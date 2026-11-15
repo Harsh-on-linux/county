@@ -1,13 +1,13 @@
 /* Slow satin folds, inspired by the supplied card reference. Text stays still. */
 .balance-flow {
-  --flow-base: #e2e3eb;
-  --flow-cool: #b7cfd6;
-  --flow-violet: #b9a9d1;
-  --flow-soft: #e7d9e2;
-  --flow-crest: #ffffffc7;
-  --flow-fold: #a99ac866;
-  --flow-glow: #f8faf5bd;
-  --flow-veil: #eef0ef45;
+  --flow-base: #702512;
+  --flow-cool: #922d0e;
+  --flow-violet: #b54216;
+  --flow-soft: #b16b42;
+  --flow-crest: #edb89142;
+  --flow-fold: #331d1b70;
+  --flow-glow: #eac6a63d;
+  --flow-veil: #21130f70;
   position: absolute;
   inset: 0;
   z-index: 0;
@@ -18,14 +18,14 @@
   contain: paint;
 }
 [data-theme="dark"] .balance-flow {
-  --flow-base: #2c2d37;
-  --flow-cool: #43535b;
-  --flow-violet: #655477;
-  --flow-soft: #514557;
-  --flow-crest: #b6b4ce44;
-  --flow-fold: #181a2966;
-  --flow-glow: #a9bdc22e;
-  --flow-veil: #20212c38;
+  --flow-base: #562413;
+  --flow-cool: #8d280e;
+  --flow-violet: #a13b16;
+  --flow-soft: #8d5636;
+  --flow-crest: #e0a47a38;
+  --flow-fold: #24181770;
+  --flow-glow: #dfb49233;
+  --flow-veil: #21130f80;
 }
 .balance-flow-wash,
 .balance-flow-ribbon,
@@ -75,7 +75,9 @@
   content: "";
   position: absolute;
   inset: 0;
-  background: linear-gradient(90deg, var(--flow-veil), transparent 80%);
+  background:
+    linear-gradient(90deg, var(--flow-veil), transparent 80%),
+    linear-gradient(#21130f55, #21130f55);
 }
 .balance-flow[data-running="true"] > div {
   animation-play-state: running;

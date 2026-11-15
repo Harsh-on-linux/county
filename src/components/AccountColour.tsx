@@ -2,12 +2,7 @@ import { Check } from "lucide-react";
 import { BurstMark } from "./BurstMark";
 import type { Account } from "../domain";
 export const accountColour = (account: Account) =>
-  account.color ||
-  (account.type === "cash"
-    ? "sage"
-    : account.type === "card"
-      ? "peach"
-      : "lilac");
+  account.color || (account.type === "card" ? "peach" : "sand");
 export const accountColours = [
   { id: "sage", label: "Sage" },
   { id: "blue", label: "Blue" },

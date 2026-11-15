@@ -1,0 +1,288 @@
+/* County / ember, paper, charcoal. The supplied palette, shared by both themes. */
+:root {
+  --signal: #e65416;
+  --paper: #f5f5f5;
+  --beige: #d8d6c9;
+  --charcoal: #303236;
+  --grey: #52555a;
+  --bg: #d8d6c9;
+  --surface: #f5f5f5;
+  --surface2: #e9e7de;
+  --text: #303236;
+  --muted: #52555a;
+  --line: #bfbeb2;
+  --accent: #ae3c0f;
+  --mint: #e5e2d5;
+  --peach: #efd6c4;
+  --lilac: #e3dfd5;
+  --positive: #46613c;
+}
+[data-theme="dark"] {
+  --bg: #303236;
+  --surface: #393c41;
+  --surface2: #44474c;
+  --text: #f5f5f5;
+  --muted: #d1d1ca;
+  --line: #60636a;
+  --accent: #ffac7d;
+  --mint: #46473e;
+  --peach: #574135;
+  --lilac: #44464b;
+  --positive: #c1d2ab;
+}
+.brand-mark {
+  color: var(--signal);
+}
+.brand-dot,
+.accent {
+  color: var(--accent);
+}
+.positive {
+  color: var(--positive);
+}
+.topbar,
+.sidebar,
+.onboarding-shell,
+.signin-screen {
+  background: var(--bg);
+}
+.card,
+.activity-card,
+.dialog,
+.review-list {
+  background: var(--surface);
+}
+.month-summary,
+.month-pulse,
+.capture-panel {
+  background: var(--surface2);
+}
+.inbox-banner,
+.household-hero,
+[data-theme="dark"] .household-hero {
+  background: var(--surface2);
+}
+.household-hero {
+  border: 1px solid var(--line);
+}
+.primary {
+  background: linear-gradient(135deg, #52555a, #303236 80%);
+  color: #f5f5f5;
+}
+[data-theme="dark"] .primary {
+  background: linear-gradient(135deg, #eeece3, #d8d6c9);
+  color: #303236;
+}
+.onboarding-cta,
+.signin-panel .primary,
+.dock-record,
+[data-theme="dark"] .dock-record {
+  background: linear-gradient(125deg, #a62f0b, #cf4412);
+  color: #f5f5f5;
+  border-color: #b63c12;
+  box-shadow:
+    inset 0 1px 0 #ffe1c44d,
+    0 6px 18px #8f2b0d12;
+}
+.dock-switch {
+  background: #303236;
+  color: #f5f5f5;
+  border-color: #52555a;
+}
+[data-theme="dark"] .dock-switch {
+  background: #d8d6c9;
+  color: #303236;
+  border-color: #e9e7de;
+}
+.dock-switch .burst-mark {
+  color: #ffac7d;
+}
+[data-theme="dark"] .dock-switch .burst-mark {
+  color: #ae3c0f;
+}
+.dock-switch > svg:last-child {
+  color: inherit;
+}
+.dock-destinations {
+  background: var(--surface);
+  border: 1px solid var(--line);
+}
+.balance-card,
+[data-theme="dark"] .balance-card {
+  background: #702512;
+  color: #f5f5f5;
+  border-color: #c67b4838;
+  box-shadow: inset 0 1px 0 #ffe5c433;
+}
+.balance-card .card-top,
+[data-theme="dark"] .balance-card .card-top,
+.balance-card > p,
+[data-theme="dark"] .balance-card > p,
+.balance-bottom,
+[data-theme="dark"] .balance-bottom {
+  color: #f5f5f5;
+}
+.balance-card button:focus-visible {
+  outline-color: #f5f5f5;
+}
+.onboarding-wordmark > span {
+  color: var(--accent);
+}
+.balance-amount,
+.balance-bottom button,
+[data-theme="dark"] .balance-bottom button {
+  color: #f5f5f5;
+}
+.balance-bottom,
+[data-theme="dark"] .balance-bottom {
+  border-color: #f5e7d938;
+}
+.balance-symbol {
+  color: #ffba83;
+}
+.onboarding-editorial {
+  background:
+    radial-gradient(ellipse at 0% 100%, #e65416b3, transparent 66%),
+    radial-gradient(ellipse at 80% 100%, #d8d6c955, transparent 50%), #303236;
+  color: #f5f5f5;
+}
+.onboarding-editorial .onboarding-kicker,
+.onboarding-editorial p,
+.editorial-bottom {
+  color: #e0ddd4;
+}
+.onboarding-editorial .onboarding-wordmark > span {
+  color: #ffac7d;
+}
+.welcome-money-card {
+  background:
+    radial-gradient(ellipse at 92% 115%, #da7b4f, transparent 58%),
+    linear-gradient(125deg, #303236, #7d230b 58%, #bc3d10);
+  color: #f5f5f5;
+  border-color: #f5c49e55;
+  box-shadow: 0 22px 42px #5c2a1926;
+}
+.welcome-money-card > small,
+.welcome-money-card > strong > span,
+.art-card-header,
+.art-card-footer {
+  color: #f2d8c2;
+}
+.art-card-symbol {
+  color: #ffac7d;
+}
+.art-card-line {
+  background: #f5f5f538;
+}
+.welcome-spark .burst-mark {
+  width: 100%;
+  height: 100%;
+}
+.spark-a {
+  width: 34px;
+  height: 34px;
+}
+.spark-b {
+  width: 22px;
+  height: 22px;
+}
+.family-illustration,
+[data-theme="dark"] .family-illustration {
+  background: var(--peach);
+}
+.personal-illustration {
+  background: var(--surface);
+}
+.onboarding-ready .ready-emblem {
+  background: var(--peach);
+  color: var(--accent);
+}
+.ready-account {
+  background: var(--surface);
+  border-color: var(--line);
+}
+.signin-panel {
+  position: relative;
+}
+.signin-brand .brand-mark {
+  color: var(--signal);
+}
+.returning-signin {
+  min-height: 44px;
+  font-size: 15px;
+  text-decoration: underline;
+  text-underline-offset: 5px;
+}
+.opening-screen {
+  --intro-paper: #d8d6c9;
+  --intro-ink: #e65416;
+}
+[data-theme="dark"] .opening-screen {
+  --intro-paper: #303236;
+  --intro-ink: #e65416;
+}
+.intro-wordmark {
+  color: var(--text);
+}
+.intro-wordmark > span {
+  color: var(--signal);
+}
+.intro-skip {
+  font-size: 14px;
+}
+.month-picker,
+.category-label small {
+  color: var(--muted);
+}
+.pulse-day.has-spend,
+[data-theme="dark"] .pulse-day.has-spend {
+  background: #e65416;
+  color: #211710;
+  font-weight: 600;
+}
+.peach,
+.mint,
+.lilac {
+  color: var(--accent);
+}
+.category-row .track > span {
+  background: var(--signal);
+}
+.category-row:nth-child(2) .track > span {
+  background: #8d7662;
+}
+.category-row:nth-child(3) .track > span {
+  background: #8d927a;
+}
+.insight-stats .card,
+.settings-section,
+.family-invite {
+  border-color: var(--line);
+}
+.entry-tabs .selected {
+  background: var(--text);
+  color: var(--surface);
+}
+.county-keypad {
+  --key-fill: #f5f5f5;
+  --key-border: #cbc9be;
+  --key-utility: #e5e2d7;
+}
+[data-theme="dark"] .county-keypad {
+  --key-fill: #42454a;
+  --key-border: #65686e;
+  --key-utility: #35383c;
+  --key-shadow: inset 0 1px 0 #ffffff08;
+}
+.onboarding-preview-note,
+.info-box {
+  background: var(--surface2);
+}
+.quiet-footer {
+  color: var(--muted);
+}
+@media (max-width: 700px) {
+  .topbar {
+    border-bottom-color: transparent;
+  }
+}

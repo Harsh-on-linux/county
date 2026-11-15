@@ -106,6 +106,8 @@ import "./balance-card.css";
 import "./review.css";
 import "./auth.css";
 import "./readability.css";
+import "./theme.css";
+import "./motion.css";
 
 if (import.meta.env.PROD && "serviceWorker" in navigator && !isAndroid) {
   void navigator.serviceWorker.register("/sw.js").catch(console.error);
@@ -143,7 +145,8 @@ function Logo({ small = false }: { small?: boolean }) {
 }
 function App() {
   const [opening, setOpening] = useState(true),
-    [welcomePreview, setWelcomePreview] = useState(false);
+    [welcomePreview, setWelcomePreview] = useState(false),
+    [signInFirst, setSignInFirst] = useState(false);
   const [data, setData] = useState<Data | null>(null),
     [fatal, setFatal] = useState(""),
     [tab, setTab] = useState("Home"),
@@ -329,9 +332,14 @@ function App() {
       localStorage.setItem("county-appearance", data.theme);
     } catch {}
     const mq = matchMedia("(prefers-color-scheme: dark)");
-    const apply = () =>
-      (document.documentElement.dataset.theme =
-        data.theme === "system" ? (mq.matches ? "dark" : "light") : data.theme);
+    const apply = () => {
+      const theme =
+        data.theme === "system" ? (mq.matches ? "dark" : "light") : data.theme;
+      document.documentElement.dataset.theme = theme;
+      document
+        .querySelector('meta[name="theme-color"]')
+        ?.setAttribute("content", theme === "dark" ? "#303236" : "#d8d6c9");
+    };
     apply();
     mq.addEventListener("change", apply);
     return () => mq.removeEventListener("change", apply);
@@ -637,6 +645,40 @@ function App() {
     );
   if (!data) return <OpeningScreen waiting />;
   if (!authReady) return <OpeningScreen waiting />;
+  const onboardingScreen = (
+    <>
+      {opening && <OpeningScreen onDone={() => setOpening(false)} />}
+      <Onboarding
+        data={data}
+        preview={welcomePreview}
+        requiresSignIn={!user && !(offlineAccess && !online)}
+        startAtSetup={signInFirst}
+        onSignIn={
+          !user && !deviceOwner ? () => setSignInFirst(true) : undefined
+        }
+        onClose={() => setWelcomePreview(false)}
+        onComplete={(next) => {
+          if (!welcomePreview) {
+            current.current = next;
+            setData(next);
+          }
+          setWelcomePreview(false);
+        }}
+      />
+    </>
+  );
+  // A new device can prepare a space before authentication. Existing records
+  // remain behind the account and device-lock gates below.
+  if (
+    !data.onboarded &&
+    !deviceOwner &&
+    !locked &&
+    !signInFirst &&
+    !data.accounts.length &&
+    !data.entries.length &&
+    !data.suggestions.length
+  )
+    return onboardingScreen;
   if (!user && !(offlineAccess && !online))
     return (
       <>
@@ -679,24 +721,7 @@ function App() {
         {notice && <p role="alert">{notice}</p>}
       </div>
     );
-  if (!data.onboarded || welcomePreview)
-    return (
-      <>
-        {opening && <OpeningScreen onDone={() => setOpening(false)} />}
-        <Onboarding
-          data={data}
-          preview={welcomePreview}
-          onClose={() => setWelcomePreview(false)}
-          onComplete={(next) => {
-            if (!welcomePreview) {
-              current.current = next;
-              setData(next);
-            }
-            setWelcomePreview(false);
-          }}
-        />
-      </>
-    );
+  if (!data.onboarded || welcomePreview) return onboardingScreen;
   const d = data;
   const viewer = user || (!online && offlineAccess ? deviceOwner : null);
   const monthly = monthEntries(d.entries, month),
@@ -969,7 +994,7 @@ function App() {
               <Settings size={20} />
             </button>
           </header>
-          <div className={"page page-" + tab.toLowerCase()}>
+          <div key={tab} className={"page page-" + tab.toLowerCase()}>
             <section className="page-heading">
               <div>
                 <div className="eyebrow">
@@ -2593,7 +2618,7 @@ function AccountForm({
   account?: Account;
 }) {
   const [type, setType] = useState<Account["type"]>(account?.type || "bank"),
-    [color, setColor] = useState(account ? accountColour(account) : "lilac"),
+    [color, setColor] = useState(account ? accountColour(account) : "sand"),
     [error, setError] = useState("");
   return (
     <form

@@ -71,6 +71,11 @@ test("account colours can be changed without changing history, and new wallets k
     .click();
   await page.getByRole("button", { name: "Blue", exact: true }).click();
   await page.getByRole("button", { name: "Save account", exact: true }).click();
+  const toast = page.locator(".toast");
+  await expect(toast).toBeVisible();
+  const toastBounds = await toast.boundingBox();
+  expect(toastBounds!.x).toBeGreaterThanOrEqual(0);
+  expect(toastBounds!.x + toastBounds!.width).toBeLessThanOrEqual(390);
   let data = await stored(page);
   expect(data.accounts[0]).toMatchObject({
     id: "bank",
@@ -174,6 +179,14 @@ for (const theme of ["light", "dark"])
   }) => {
     await seed(page, theme);
     await page.setViewportSize({ width: 320, height: 640 });
+    await expect(page.locator("html")).toHaveCSS(
+      "background-color",
+      theme === "dark" ? "rgb(48, 50, 54)" : "rgb(216, 214, 201)",
+    );
+    await expect(page.locator(".mobile-brand .brand-mark")).toHaveCSS(
+      "color",
+      "rgb(230, 84, 22)",
+    );
     for (const selector of [
       ".transaction-info strong",
       ".transaction-info small",

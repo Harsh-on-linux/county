@@ -1,0 +1,121 @@
+/* Small, finite movements; financial figures never count or bounce. */
+:root {
+  --ease-settle: cubic-bezier(0.22, 0.61, 0.36, 1);
+  --ease-flow: cubic-bezier(0.45, 0, 0.2, 1);
+}
+button,
+input,
+textarea,
+.account-card,
+.choice-trigger {
+  transition:
+    background-color 180ms var(--ease-settle),
+    color 180ms var(--ease-settle),
+    border-color 180ms var(--ease-settle),
+    box-shadow 180ms var(--ease-settle);
+}
+button:not(:disabled):active {
+  translate: 0 1px;
+}
+button:focus-visible,
+input:focus-visible,
+textarea:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 4px;
+}
+.page {
+  animation: county-page-arrive 340ms var(--ease-settle) both;
+}
+.dialog {
+  animation: county-sheet-arrive 240ms var(--ease-settle) both;
+}
+.modal-backdrop {
+  animation: county-fade 180ms ease-out both;
+}
+.choice-options {
+  animation: county-sheet-arrive 180ms var(--ease-settle) both;
+  transform-origin: top;
+}
+.dock-destinations {
+  animation: county-sheet-arrive 240ms var(--ease-settle) both;
+}
+.signin-panel,
+.onboarding-ready {
+  animation: county-page-arrive 480ms var(--ease-settle) both;
+}
+.onboarding-step {
+  animation-duration: 480ms;
+  animation-timing-function: var(--ease-flow);
+}
+.onboarding-copy,
+.onboarding-setup-copy {
+  animation: county-page-arrive 480ms 60ms var(--ease-settle) both;
+}
+.welcome-money-card {
+  animation-timing-function: var(--ease-settle);
+}
+.transaction,
+.review-row {
+  animation: county-fade 300ms ease-out both;
+}
+.transaction:nth-child(2),
+.review-row:nth-child(2) {
+  animation-delay: 25ms;
+}
+.transaction:nth-child(3),
+.review-row:nth-child(3) {
+  animation-delay: 50ms;
+}
+.transaction:nth-child(4),
+.review-row:nth-child(4) {
+  animation-delay: 75ms;
+}
+.composer-details:not([hidden]) {
+  animation: county-page-arrive 260ms var(--ease-settle) both;
+}
+.county-keypad {
+  animation: county-fade 220ms ease-out both;
+}
+.toast {
+  animation: county-sheet-arrive 240ms var(--ease-settle) both;
+}
+@keyframes county-page-arrive {
+  from {
+    opacity: 0;
+    translate: 0 8px;
+  }
+  to {
+    opacity: 1;
+    translate: 0 0;
+  }
+}
+@keyframes county-sheet-arrive {
+  from {
+    opacity: 0;
+    translate: 0 6px;
+  }
+  to {
+    opacity: 1;
+    translate: 0 0;
+  }
+}
+@keyframes county-fade {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation: none !important;
+    transition: none !important;
+    scroll-behavior: auto !important;
+  }
+  button:not(:disabled):active {
+    translate: none;
+  }
+}

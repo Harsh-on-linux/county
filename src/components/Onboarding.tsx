@@ -64,8 +64,12 @@ function WelcomeArt() {
         </div>
         <small>Just recorded</small>
       </div>
-      <span className="welcome-spark spark-a">✳</span>
-      <span className="welcome-spark spark-b">✦</span>
+      <span className="welcome-spark spark-a">
+        <BurstMark />
+      </span>
+      <span className="welcome-spark spark-b">
+        <BurstMark />
+      </span>
       <span className="art-example">
         An illustration of your everyday money
       </span>
@@ -117,18 +121,24 @@ export function Onboarding({
   preview = false,
   onComplete,
   onClose,
+  onSignIn,
+  requiresSignIn = false,
+  startAtSetup = false,
 }: {
   data: Data;
   preview?: boolean;
   onComplete: (data: Data) => void;
   onClose?: () => void;
+  onSignIn?: () => void;
+  requiresSignIn?: boolean;
+  startAtSetup?: boolean;
 }) {
-  const [step, setStep] = useState(0),
+  const [step, setStep] = useState(startAtSetup && !preview ? 2 : 0),
     [direction, setDirection] = useState("forward"),
     [name, setName] = useState(data.name),
     [type, setType] = useState<Account["type"]>("cash"),
     [accountName, setAccountName] = useState("Cash"),
-    [accountColor, setAccountColor] = useState("sage"),
+    [accountColor, setAccountColor] = useState("sand"),
     [opening, setOpening] = useState(""),
     [saving, setSaving] = useState(false),
     [error, setError] = useState(""),
@@ -259,12 +269,16 @@ export function Onboarding({
             <h1 id="onboarding-ready-heading" tabIndex={-1} ref={heading}>
               {preview
                 ? "Make room for clarity."
-                : `You’re home, ${name.trim()}.`}
+                : requiresSignIn
+                  ? `Your space is ready, ${name.trim()}.`
+                  : `You’re home, ${name.trim()}.`}
             </h1>
             <p>
               {preview
                 ? "A quieter way to keep up with your everyday money."
-                : "Your space is ready. Start small. It all adds up."}
+                : requiresSignIn
+                  ? "One last step: verify your email to keep this space yours."
+                  : "Your space is ready. Start small. It all adds up."}
             </p>
             <div className="ready-account">
               <span>
@@ -286,14 +300,20 @@ export function Onboarding({
               className="onboarding-cta"
               onClick={() => onComplete(prepared)}
             >
-              {preview ? "Back to County" : "Open my space"}
+              {preview
+                ? "Back to County"
+                : requiresSignIn
+                  ? "Continue with email"
+                  : "Open my space"}
               <ArrowRight size={19} />
             </button>
             <span className="onboarding-footnote">
               <ShieldCheck size={13} />{" "}
               {preview
                 ? "Your existing records are unchanged."
-                : "Saved on this device. Ready when you are."}
+                : requiresSignIn
+                  ? "Your setup is saved on this device."
+                  : "Saved on this device. Ready when you are."}
             </span>
           </section>
         ) : (
@@ -333,8 +353,16 @@ export function Onboarding({
                     Find your clarity <ArrowRight size={19} />
                   </button>
                   <span className="onboarding-footnote">
-                    No bank login. No internet needed to get started.
+                    No bank login. Prepare your space, then verify your email.
                   </span>
+                  {!preview && onSignIn && (
+                    <button
+                      className="onboarding-text-button returning-signin"
+                      onClick={onSignIn}
+                    >
+                      Already use County? Sign in <ArrowRight size={16} />
+                    </button>
+                  )}
                 </div>
               </>
             ) : step === 1 ? (
