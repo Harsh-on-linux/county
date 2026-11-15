@@ -88,6 +88,7 @@ import { BalanceSurface } from "./components/BalanceSurface";
 import { UnlabelledInbox } from "./components/UnlabelledInbox";
 import { FamilySettings } from "./components/FamilySettings";
 import { EmailSignIn } from "./components/EmailSignIn";
+import { SignInScreen } from "./components/SignInScreen";
 import {
   ingestMessages,
   matchSuggestion,
@@ -100,6 +101,7 @@ import "./keypad.css";
 import "./opening.css";
 import "./balance-card.css";
 import "./review.css";
+import "./auth.css";
 
 if (import.meta.env.PROD && "serviceWorker" in navigator && !isAndroid) {
   void navigator.serviceWorker.register("/sw.js").catch(console.error);
@@ -165,6 +167,10 @@ function App() {
     window.scrollTo(0, 0);
   }, [tab]);
   const [user, setUser] = useState<string | null>(null),
+    [authReady, setAuthReady] = useState(!cloud),
+    [offlineAccess, setOfflineAccess] = useState(false),
+    [deviceOwner, setDeviceOwner] = useState<string | null>(null),
+    [authError, setAuthError] = useState(""),
     [group, setGroup] = useState<Household | null>(null),
     [members, setMembers] = useState<Member[]>([]),
     [shared, setShared] = useState<SharedEntry[]>([]),
@@ -205,7 +211,10 @@ function App() {
     let active = true;
     const accept = async (id: string | null) => {
       if (!id) {
-        if (active) setUser(null);
+        if (active) {
+          setUser(null);
+          setAuthReady(true);
+        }
         return;
       }
       const owner = await Preferences.get({ key: "county-device-owner" });
@@ -214,18 +223,66 @@ function App() {
         toast(
           "These local records belong to a different account. Use that account on this phone to keep personal records private.",
         );
+        if (active) {
+          setAuthError(
+            "These records belong to another account. Sign in with the email originally used on this phone.",
+          );
+          setAuthReady(true);
+        }
         return;
       }
       await Preferences.set({ key: "county-device-owner", value: id });
-      if (active) setUser(id);
+      await Preferences.set({ key: "county-offline-access", value: "allowed" });
+      if (active) {
+        setUser(id);
+        setDeviceOwner(id);
+        setOfflineAccess(true);
+        setAuthReady(true);
+        setAuthError("");
+      }
     };
-    cloud.auth
-      .getSession()
-      .then(({ data }) => void accept(data.session?.user.id || null));
+    void (async () => {
+      const cached = await Preferences.get({ key: "county-offline-access" });
+      const owner = await Preferences.get({ key: "county-device-owner" });
+      if (active) {
+        setDeviceOwner(owner.value);
+        setOfflineAccess(cached.value === "allowed" && !!owner.value);
+        if (!navigator.onLine) setAuthReady(true);
+      }
+      const result = await cloud!.auth.getSession();
+      if (result.error) throw result.error;
+      await accept(result.data.session?.user.id || null);
+    })().catch((e) => {
+      if (active) {
+        setAuthReady(true);
+        if (navigator.onLine)
+          setAuthError(
+            "Could not check your session. Sign in again to continue.",
+          );
+      }
+    });
     const {
       data: { subscription },
-    } = cloud.auth.onAuthStateChange((_e, s) => {
-      setTimeout(() => void accept(s?.user.id || null), 0);
+    } = cloud.auth.onAuthStateChange((event, s) => {
+      setTimeout(() => {
+        void (async () => {
+          if (event === "SIGNED_OUT") {
+            if (active) {
+              setModal(null);
+              setTab("Home");
+            }
+            await Preferences.remove({ key: "county-offline-access" });
+            if (active) setOfflineAccess(false);
+          }
+          await accept(s?.user.id || null);
+        })().catch(() => {
+          if (active) {
+            setUser(null);
+            setAuthReady(true);
+            setAuthError("Could not save your sign-in. Please try again.");
+          }
+        });
+      }, 0);
     });
     return () => {
       active = false;
@@ -233,7 +290,8 @@ function App() {
     };
   }, []);
   useEffect(() => {
-    if (!user) {
+    const profile = user || (!online && offlineAccess ? deviceOwner : null);
+    if (!profile) {
       setGroup(null);
       setMembers([]);
       setShared([]);
@@ -244,23 +302,23 @@ function App() {
       return;
     }
     void (async () => {
-      const marks = await Preferences.get({ key: "county-marks-" + user });
+      const marks = await Preferences.get({ key: "county-marks-" + profile });
       revisions.current = JSON.parse(marks.value || "{}");
       const rev = await Preferences.get({
-        key: "county-backup-revision-" + user,
+        key: "county-backup-revision-" + profile,
       });
       backupRevision.current = Number(rev.value || 0);
       const cache = await Preferences.get({ key: "county-household" });
       if (cache.value) {
         const c = JSON.parse(cache.value);
-        if (c.user === user) {
+        if (c.user === profile) {
           setGroup(c.household);
           setMembers(c.members);
           setShared(c.entries);
         }
       }
     })();
-  }, [user]);
+  }, [user, online, offlineAccess, deviceOwner]);
   useEffect(() => {
     if (!data) return;
     try {
@@ -351,7 +409,14 @@ function App() {
     }
   }
   useEffect(() => {
-    if (!isAndroid || !data?.onboarded || !data.smsCapture || locked || opening)
+    if (
+      !isAndroid ||
+      !data?.onboarded ||
+      !data.smsCapture ||
+      locked ||
+      opening ||
+      (!user && !(offlineAccess && !online))
+    )
       return;
     void scanMessages(false);
     const timer = setInterval(() => {
@@ -367,7 +432,15 @@ function App() {
       clearInterval(timer);
       void listener.then((l) => l.remove());
     };
-  }, [data?.onboarded, data?.smsCapture, locked, opening]);
+  }, [
+    data?.onboarded,
+    data?.smsCapture,
+    locked,
+    opening,
+    user,
+    offlineAccess,
+    online,
+  ]);
   async function attempt(fn: () => Promise<void>) {
     setBusy(true);
     try {
@@ -548,6 +621,19 @@ function App() {
       </div>
     );
   if (!data) return <OpeningScreen waiting />;
+  if (!authReady) return <OpeningScreen waiting />;
+  if (!user && !(offlineAccess && !online))
+    return (
+      <>
+        {opening && <OpeningScreen onDone={() => setOpening(false)} />}
+        <SignInScreen
+          busy={busy}
+          attempt={attempt}
+          online={online}
+          error={authError}
+        />
+      </>
+    );
   if (locked)
     return (
       <div className="county-unlock">
@@ -597,6 +683,7 @@ function App() {
       </>
     );
   const d = data;
+  const viewer = user || (!online && offlineAccess ? deviceOwner : null);
   const monthly = monthEntries(d.entries, month),
     total = totals(monthly),
     available = d.accounts
@@ -605,7 +692,7 @@ function App() {
     owed = -d.accounts
       .filter((a) => a.type === "card")
       .reduce((s, a) => s + Math.min(balance(a, d.entries), 0), 0);
-  const householdView = householdLedger(d, shared, user, !!group);
+  const householdView = householdLedger(d, shared, viewer, !!group);
   const hm = monthEntries(householdView, month),
     ht = totals(hm);
   const recent = [...d.entries]
@@ -689,14 +776,14 @@ function App() {
             const item = shared.find((s) => s.id === e.id);
             if (
               d.entries.some((local) => local.id === e.id) &&
-              (!item || item.creator === user)
+              (!item || item.creator === viewer)
             ) {
               setEdit(d.entries.find((local) => local.id === e.id)!);
               setSuggestion(null);
               setModal("entry");
               return;
             }
-            if (item && (item.creator === user || group?.owner === user)) {
+            if (item && (item.creator === viewer || group?.owner === viewer)) {
               setEdit({ ...item.payload, account: d.accounts[0]?.id || "" });
               setModal("shared-edit:" + e.id);
             } else toast(`${payer} paid · ${e.note || e.category}`);
@@ -2630,8 +2717,8 @@ function CloudSettings({
       ) : !user ? (
         <>
           <p className="caption">
-            Sign in to connect your family and keep a private cloud backup.
-            Local records work without an account.
+            Sign in to connect your family and keep a private cloud backup. Your
+            signed-in device can keep tracking offline.
           </p>
           <EmailSignIn busy={busy} attempt={attempt} />
         </>

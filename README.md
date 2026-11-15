@@ -1,5 +1,7 @@
 # County
 
+Each person now signs in with their own email OTP before setup or access to records. Sessions persist across launches; previously verified devices can track offline. Signing out requires OTP sign-in again and revokes offline access. The pilot keeps one account profile per phone to prevent existing local records from being attached to another account. Data storage and family visibility are explained in `design/DATA-AND-AUTH.md`.
+
 An offline Android money tracker for a family pilot. React + TypeScript, Vite, and Capacitor 8, with optional Supabase authentication, private backup, and household sharing. The supplied logo has been reconstructed as a transparent vector mark, with theme-aware in-app SVG, standalone dark/light SVG assets, an adaptive Android icon, and a vector splash mark. The selected display face is Manila Black, paired with locally bundled Inter for controls and financial figures. The colour palette remains provisional.
 
 Brand assets: `public/brand/`, shared React mark: `src/components/BrandMark.tsx`, visual reference sheet: `design/county-brand-preview.png`. The original image is preserved in `design/references/logo-original.png` for reference only; it is not used in the app.

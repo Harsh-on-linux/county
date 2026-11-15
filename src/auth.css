@@ -1,0 +1,71 @@
+.signin-screen {
+  min-height: 100dvh;
+  display: grid;
+  place-items: center;
+  padding: 44px 24px;
+  background: var(--bg);
+  color: var(--text);
+}
+.signin-panel {
+  width: 100%;
+  max-width: 390px;
+}
+.signin-brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 62px;
+  font: 900 31px/1 var(--font-display);
+  letter-spacing: -0.05em;
+}
+.signin-brand .brand-mark {
+  width: 29px;
+  height: 29px;
+}
+.signin-panel > .eyebrow {
+  font-size: 9px;
+  color: var(--muted);
+}
+.signin-panel h1 {
+  font: 900 47px/1.04 var(--font-display);
+  letter-spacing: -0.05em;
+  margin: 13px 0 19px;
+}
+.signin-panel > p {
+  font-size: 12px;
+  line-height: 1.85;
+  color: var(--muted);
+  margin-bottom: 31px;
+}
+.signin-panel .family-form label {
+  font-size: 12px;
+}
+.signin-panel .family-form input {
+  min-height: 52px;
+}
+.signin-panel .family-form .primary {
+  min-height: 51px;
+}
+.signin-privacy {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  border-top: 1px solid var(--line);
+  padding-top: 23px;
+  margin-top: 32px;
+  font-size: 10px;
+  line-height: 1.8;
+  color: var(--muted);
+}
+.signin-privacy svg {
+  flex-shrink: 0;
+  margin-top: 3px;
+}
+@media (max-width: 360px) {
+  .signin-brand {
+    margin-bottom: 40px;
+  }
+  .signin-panel h1 {
+    font-size: 41px;
+  }
+}

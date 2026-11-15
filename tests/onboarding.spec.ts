@@ -1,5 +1,5 @@
 import { setMoney, choose } from "./helpers";
-import { test, expect, type Page } from "@playwright/test";
+import { test, expect, type Page } from "./fixtures";
 async function settle(page: Page) {
   await page.evaluate(() =>
     document

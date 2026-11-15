@@ -1,4 +1,4 @@
-import { test, expect, type Page } from "@playwright/test";
+import { test, expect, type Page } from "./fixtures";
 import { initial } from "../src/domain";
 
 async function prepare(page: Page, theme: "light" | "dark") {

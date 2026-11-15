@@ -1,5 +1,5 @@
 import { setMoney, choose } from "./helpers";
-import { test, expect } from "@playwright/test";
+import { test, expect } from "./fixtures";
 test("onboarding, real ledger, offline persistence, sharing, delete and restore", async ({
   page,
   context,

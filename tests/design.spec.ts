@@ -1,4 +1,4 @@
-import { test, expect, type Page } from "@playwright/test";
+import { test, expect, type Page } from "./fixtures";
 import { initial, today, type Data } from "../src/domain";
 import { choose, setMoney } from "./helpers";
 test("zero starting balances are accepted through the County number pad", async ({

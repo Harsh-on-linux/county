@@ -5,7 +5,12 @@ const owner = "10000000-0000-4000-8000-000000000001";
 const mom = "10000000-0000-4000-8000-000000000002";
 const invitation = "abcdef1234567890abcdef1234567890";
 
-async function familyApp(page: Page) {
+async function familyApp(page: Page, existingOwner?: string) {
+  if (existingOwner)
+    await page.addInitScript(
+      (id) => localStorage.setItem("CapacitorStorage.county-device-owner", id),
+      existingOwner,
+    );
   await page.setViewportSize({ width: 390, height: 844 });
   await page.addInitScript(
     (data) =>
@@ -49,6 +54,7 @@ async function familyApp(page: Page) {
       });
     if (req.method() === "OPTIONS") return send({});
     if (path.endsWith("/otp")) return send({});
+    if (path.endsWith("/logout")) return send({});
     if (path.endsWith("/verify")) {
       if (args.token !== "12345678")
         return send(
@@ -116,9 +122,9 @@ async function familyApp(page: Page) {
   });
   await page.goto("/");
   await page.locator(".opening-screen").waitFor({ state: "hidden" });
-  await page.getByRole("button", { name: "Navigate County" }).click();
-  await page.getByRole("button", { name: "Household", exact: true }).click();
-  await page.getByRole("button", { name: "Connect your family" }).click();
+  await expect(
+    page.getByRole("heading", { name: /Your money\..*Your account\./ }),
+  ).toBeVisible();
   await page.getByRole("textbox", { name: "Your email" }).fill(user.email);
   await page.getByRole("button", { name: "Send sign-in code" }).click();
   await page.getByRole("textbox", { name: "Email code" }).fill("11111111");
@@ -126,6 +132,18 @@ async function familyApp(page: Page) {
   await expect(page.getByRole("alert")).toContainText("not valid");
   await page.getByRole("textbox", { name: "Email code" }).fill("12345678");
   await page.getByRole("button", { name: "Verify code" }).click();
+  if (existingOwner) {
+    await expect(page.getByRole("alert")).toContainText(
+      "These records belong to another account",
+    );
+    return calls;
+  }
+  await expect(
+    page.getByRole("heading", { name: "Hello, Harsh." }),
+  ).toBeVisible();
+  await page.getByRole("button", { name: "Navigate County" }).click();
+  await page.getByRole("button", { name: "Household", exact: true }).click();
+  await page.getByRole("button", { name: "Connect your family" }).click();
   await expect(
     page.getByRole("button", { name: /Create a family/ }),
   ).toBeVisible();
@@ -182,4 +200,44 @@ test("joining validates the code, explains an expired invite, and connects the m
   await expect(
     page.getByRole("button", { name: "Invite a family member" }),
   ).toHaveCount(0);
+});
+
+test("OTP sign-in persists across reopening, while sign-out requires authentication again", async ({
+  page,
+  context,
+}) => {
+  await familyApp(page);
+  await page.getByRole("button", { name: "Close dialog" }).click();
+  await page.reload();
+  await expect(
+    page.getByRole("heading", { name: "Hello, Harsh." }),
+  ).toBeVisible();
+  await page.getByRole("button", { name: "Settings", exact: true }).click();
+  await page.getByRole("button", { name: "Sign out", exact: true }).click();
+  await expect(
+    page.getByRole("heading", { name: /Your money\..*Your account\./ }),
+  ).toBeVisible();
+  await context.setOffline(true);
+  await expect(
+    page.getByText("Connect to the internet to sign in for the first time.", {
+      exact: false,
+    }),
+  ).toBeVisible();
+  await expect(
+    page.getByRole("heading", { name: "Hello, Harsh." }),
+  ).toHaveCount(0);
+});
+
+test("another person's OTP cannot attach this phone's existing records to their account", async ({
+  page,
+}) => {
+  await familyApp(page, mom);
+  await expect(
+    page.getByRole("heading", { name: /Your money\..*Your account\./ }),
+  ).toBeVisible();
+  expect(
+    await page.evaluate(() =>
+      localStorage.getItem("CapacitorStorage.county-device-owner"),
+    ),
+  ).toBe(mom);
 });

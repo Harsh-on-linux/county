@@ -53,6 +53,16 @@ export function FamilySettings({
       family. Your balances and personal records stay private.
     </p>
   );
+  if (!navigator.onLine)
+    return (
+      <>
+        <p className="family-intro">
+          Connect to the internet to sign in, invite someone, or manage your
+          family. Previously synced expenses remain available offline.
+        </p>
+        {privacy}
+      </>
+    );
   if (!cloud)
     return (
       <>
